@@ -1,0 +1,267 @@
+// ====================== تنظیمات ======================
+const BOT_TOKEN = "8570573853:AAGnpZXA7fw2SykKa2qmqZRwvHi5Ak7eBXM";
+const CHAT_ID = "@GheymatRamzarz";
+
+// ====================== API‌ها ======================
+const CRYPTO_API = "https://api-web.tabdeal.org/r/plots/currencies/dynamic-info/";
+const CURRENCY_API = "https://alnchnd.apidarkness.workers.dev/currency";
+
+// ====================== لیست ۱۰ ارز دیجیتال ======================
+const COINS = [
+  "BTC", "TRX", "DOGE", "GRAM", "NOT",
+  "DOGS", "HMSTR", "MAJOR", "BABYDOGE", "USDT"
+];
+
+// ====================== ارزهای فیات (دلار و درهم) ======================
+const FIAT_CURRENCIES = [
+  { code: "usd", name: "Dollar" },
+  { code: "aed", name: "Derham" }
+];
+
+export default {
+  // ===== Cron (هر ۱۵ دقیقه) =====
+  async scheduled(event, env, ctx) {
+    try {
+      await runBoth();
+    } catch (err) {
+      console.error("Cron error:", err);
+    }
+  },
+
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // === اجرای فوری هر دو ===
+    if (path === "/manual" || path === "/run") {
+      try {
+        await runBoth();
+        return new Response("✅ هر دو جدول با موفقیت به کانال ارسال شدند!", {
+          status: 200,
+          headers: { "Content-Type": "text/plain; charset=utf-8" }
+        });
+      } catch (err) {
+        return new Response("❌ خطا در ارسال: " + err.message, {
+          status: 500,
+          headers: { "Content-Type": "text/plain; charset=utf-8" }
+        });
+      }
+    }
+
+    // === دیباگ: رمزارزها ===
+    if (url.searchParams.has("debug") && url.searchParams.get("debug") === "crypto") {
+      try {
+        const data = await fetchCryptoPrices();
+        return new Response(JSON.stringify(data, null, 2), {
+          headers: { "Content-Type": "application/json" },
+        });
+      } catch (err) {
+        return new Response("Debug error: " + err.message, { status: 500 });
+      }
+    }
+
+    // === دیباگ: دلار و درهم ===
+    if (url.searchParams.has("debug") && url.searchParams.get("debug") === "fiat") {
+      try {
+        const data = await fetchFiatPrices();
+        return new Response(JSON.stringify(data, null, 2), {
+          headers: { "Content-Type": "application/json" },
+        });
+      } catch (err) {
+        return new Response("Debug error: " + err.message, { status: 500 });
+      }
+    }
+
+    return new Response(
+      "🚀 Worker ادغام‌شده در حال اجراست!\n\n" +
+      "🔹 /manual یا /run ← اجرای فوری هر دو جدول\n" +
+      "🔹 ?debug=crypto ← مشاهده JSON رمزارزها\n" +
+      "🔹 ?debug=fiat ← مشاهده JSON دلار و درهم\n" +
+      "🔹 Cron هر ۱۵ دقیقه",
+      {
+        status: 200,
+        headers: { "Content-Type": "text/plain; charset=utf-8" }
+      }
+    );
+  },
+};
+
+// ── اجرای هر دو (بدون KV) ──
+async function runBoth() {
+  // ۱. ارسال پیام رمزارزها
+  const cryptoData = await fetchCryptoPrices();
+  const cryptoHtml = buildCryptoTable(cryptoData);
+  await sendRichMessage(cryptoHtml);
+  console.log("✅ جدول رمزارزها ارسال شد.");
+
+  // ۲. ارسال پیام دلار و درهم
+  const fiatData = await fetchFiatPrices();
+  const fiatHtml = buildFiatTable(fiatData);
+  await sendRichMessage(fiatHtml);
+  console.log("✅ جدول دلار و درهم ارسال شد.");
+}
+
+// ── دریافت قیمت رمزارزها ──
+async function fetchCryptoPrices() {
+  const res = await fetch(CRYPTO_API, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; PriceBot/1.0)",
+      "Accept": "application/json",
+    }
+  });
+
+  if (!res.ok) {
+    throw new Error(`Crypto API error: ${res.status}`);
+  }
+
+  const json = await res.json();
+  const result = {};
+
+  for (const coin of COINS) {
+    const data = json.currencies?.[coin];
+    if (!data || !data.IRT) {
+      result[coin] = { priceIRR: "0", change: "0", error: true };
+      continue;
+    }
+    result[coin] = {
+      priceIRR: data.IRT.price || "0",
+      change: data.IRT.change_percent_24 || "0",
+    };
+  }
+
+  return result;
+}
+
+// ── دریافت قیمت دلار و درهم (همراه با اطلاعات نوسان) ──
+async function fetchFiatPrices() {
+  const res = await fetch(CURRENCY_API, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; PriceBot/1.0)",
+      "Accept": "application/json",
+    }
+  });
+
+  if (!res.ok) {
+    throw new Error(`Currency API error: ${res.status}`);
+  }
+
+  const json = await res.json();
+  const items = json.currency_prices?.items || [];
+  
+  const result = {};
+  for (const fiat of FIAT_CURRENCIES) {
+    const item = items.find(i => i.code === fiat.code);
+    if (item && item.sell_price) {
+      const direction = item.sell_price.direction || {};
+      result[fiat.code] = {
+        name: fiat.name,
+        price: item.sell_price.value || 0,
+        color: direction.color || "neutral",   // "red", "green", "neutral"
+        sign: direction.sign || "",            // "+" یا "-"
+      };
+    } else {
+      result[fiat.code] = { name: fiat.name, price: 0, color: "neutral", sign: "", error: true };
+    }
+  }
+
+  return result;
+}
+
+// ── فرمت‌کننده اعداد ──
+function formatNumber(num) {
+  const n = parseFloat(num);
+  if (isNaN(n)) return num;
+  if (n >= 1000) {
+    return Math.round(n).toLocaleString('en-US');
+  } else if (n >= 1) {
+    return n.toFixed(2);
+  } else if (n >= 0.000001) {
+    return n.toFixed(6);
+  } else {
+    return n.toFixed(8);
+  }
+}
+
+// ── ساخت جدول رمزارزها ──
+function buildCryptoTable(data) {
+  let html = `<b>📊 قیمت لحظه‌ای ارزهای دیجیتال</b>\n\n`;
+  html += `<table bordered striped>`;
+  html += `<tr><th>ارز</th><th>تومان</th><th>نوسان</th><th>ریال</th></tr>`;
+
+  for (const [coin, d] of Object.entries(data)) {
+    if (d.error || !d.priceIRR || parseFloat(d.priceIRR) === 0) {
+      html += `<tr><td>${coin}</td><td>N/A</td><td>❌ خطا</td><td>N/A</td></tr>`;
+      continue;
+    }
+
+    const change = parseFloat(d.change);
+    const arrow = change > 0 ? "📈" : change < 0 ? "📉" : "⚪";
+    const changeDisplay = (change > 0 ? "+" : "") + change.toFixed(2) + "%";
+
+    const irr = formatNumber(d.priceIRR);
+    const rial = formatNumber(parseFloat(d.priceIRR) * 10);
+
+    html += `<tr><td>${coin}</td><td>${irr}</td><td>${arrow} ${changeDisplay}</td><td>${rial}</td></tr>`;
+  }
+
+  html += `</table>`;
+  return html;
+}
+
+// ── ساخت جدول دلار و درهم (با ستون نوسان به صورت شکلک رنگی) ──
+function buildFiatTable(data) {
+  let html = `<b>💵 قیمت لحظه‌ای ارزهای خارجی</b>\n\n`;
+  html += `<table bordered striped>`;
+  html += `<tr><th>ارز</th><th>تومان</th><th>نوسان</th><th>ریال</th></tr>`;
+
+  for (const [code, d] of Object.entries(data)) {
+    if (d.error || !d.price) {
+      html += `<tr><td>${d.name}</td><td>N/A</td><td>❌ خطا</td><td>N/A</td></tr>`;
+      continue;
+    }
+
+    // انتخاب شکلک بر اساس رنگ
+    let emoji = "⬜️"; // پیش‌فرض (neutral)
+    if (d.color === "red") emoji = "🟥";
+    else if (d.color === "green") emoji = "🟩";
+
+    // (اختیاری) اگر علامت + یا - هم داشته باشیم، می‌توانیم کنار شکلک نمایش دهیم
+    // ولی کاربر فقط شکلک را خواسته، پس فقط شکلک را قرار می‌دهیم
+    const changeDisplay = emoji;
+
+    const price = formatNumber(d.price);
+    const rial = formatNumber(d.price * 10);
+
+    html += `<tr><td>${d.name}</td><td>${price}</td><td>${changeDisplay}</td><td>${rial}</td></tr>`;
+  }
+
+  html += `</table>`;
+  return html;
+}
+
+// ── ارسال پیام Rich به تلگرام ──
+async function sendRichMessage(htmlContent) {
+  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendRichMessage`;
+  
+  const body = {
+    chat_id: CHAT_ID,
+    rich_message: {
+      html: htmlContent,
+      is_rtl: false,
+      skip_entity_detection: false,
+    }
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Telegram Rich API error: ${err}`);
+  }
+
+  return await res.json();
+}
