@@ -1,0 +1,419 @@
+// worker.js
+// Cloudflare Worker – Live Commodity Prices + Metals (Corrected Units & Sources)
+// Cron: */33 * * * * (هر ۳۳ دقیقه)
+// KV Namespace: bind as COMMODITY_KV
+
+const BOT_TOKEN = "8604276925:AAHzXFfN03YlJ_bC4-rK_54HlDMbA9kQgL8";
+const CHAT_ID = "@AUTObotbotlink7";
+const KV_NAMESPACE = "COMMODITY_KV";
+
+// ---------- کالاهای اصلی (بدون Crude Oil و Brent) ----------
+const COMMODITIES = [
+  { name: "Natural Gas", symbol: "NG=F", emoji: "🔥", unit: "USD/MMBtu" },
+  { name: "Gasoline", symbol: "RB=F", emoji: "⛽", unit: "USD/gallon" },
+  { name: "Wheat", symbol: "ZW=F", emoji: "🌾", unit: "USD/bu" },
+  { name: "Coffee", symbol: "KC=F", emoji: "☕", unit: "USD/lb" },
+  { name: "Cocoa", symbol: "CC=F", emoji: "🍫", unit: "USD/ton" },
+  { name: "Corn", symbol: "ZC=F", emoji: "🌽", unit: "USD/bu" },
+  { name: "Soybeans", symbol: "ZS=F", emoji: "🫘", unit: "USD/bu" },
+  { name: "Sugar", symbol: "SB=F", emoji: "🍬", unit: "USD/lb" },
+  { name: "Cotton", symbol: "CT=F", emoji: "🧵", unit: "USD/lb" },
+  { name: "Lean Hogs", symbol: "HE=F", emoji: "🐖", unit: "USD/lb" },
+  { name: "Live Cattle", symbol: "LE=F", emoji: "🐄", unit: "USD/lb" },
+  { name: "Oat", symbol: "ZO=F", emoji: "🌾", unit: "USD/bu" },
+  { name: "Rice", symbol: "ZR=F", emoji: "🍚", unit: "USD/cwt" },
+  { name: "Orange Juice", symbol: "OJ=F", emoji: "🍊", unit: "USD/lb" },
+  { name: "Feeder Cattle", symbol: "GF=F", emoji: "🐂", unit: "USD/lb" },
+  { name: "Canola", symbol: "", emoji: "🌼", unit: "CAD/T", custom: true },
+  { name: "Lumber", symbol: "LB=F", emoji: "🪵", unit: "USD/1000 board feet" },
+  { name: "Ethanol", symbol: "EH=F", emoji: "🧪", unit: "USD/gallon" },
+  { name: "Milk", symbol: "DA=F", emoji: "🥛", unit: "USD/cwt" },
+  { name: "Cheese", symbol: "CJ=F", emoji: "🧀", unit: "USD/lb" },
+];
+
+// ---------- فلزات (۱۳ مورد) ----------
+const METALS = [
+  { name: "Gold", symbol: "GC=F", emoji: "🥇", unit: "USD/oz" },
+  { name: "Silver", symbol: "SI=F", emoji: "🥈", unit: "USD/oz" },
+  { name: "Platinum", symbol: "PL=F", emoji: "🔘", unit: "USD/oz" },
+  { name: "Palladium", symbol: "PA=F", emoji: "⚪", unit: "USD/oz" },
+  { name: "Copper", symbol: "HG=F", emoji: "🔶", unit: "USD/lb" },
+  { name: "Aluminum", symbol: "ALI=F", emoji: "🔩", unit: "USD/ton" },
+  { name: "Nickel", symbol: "", emoji: "🪙", unit: "USD/ton", custom: true },
+  { name: "Zinc", symbol: "", emoji: "🧪", unit: "USD/ton", custom: true },
+  { name: "Lead", symbol: "", emoji: "🔋", unit: "USD/ton", custom: true },
+  { name: "Tin", symbol: "", emoji: "🥫", unit: "USD/ton", custom: true },
+  { name: "Steel (HRC)", symbol: "HRC=F", emoji: "🏗️", unit: "USD/ton" },
+  { name: "Lithium ETF", symbol: "LIT", emoji: "🔋", unit: "USD/share" },
+  { name: "Uranium ETF", symbol: "URA", emoji: "☢️", unit: "USD/share" },
+];
+
+// نگاشت فلزات TradingEconomics
+const TE_METALS = {
+  "Zinc": "zinc",
+  "Lead": "lead",
+  "Nickel": "nickel",
+  "Tin": "tin",
+};
+
+export default {
+  async scheduled(event, env, ctx) {
+    try {
+      await processCommodities(env);
+      await processMetals(env);
+    } catch (err) {
+      console.error("Fatal worker error:", err);
+    }
+  },
+
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+
+    if (url.searchParams.get("run") === "cron") {
+      try {
+        await processCommodities(env);
+        await processMetals(env);
+        return new Response("Manual cron executed: messages sent ✅", { status: 200 });
+      } catch (err) {
+        console.error("Manual cron error:", err);
+        return new Response("Error during manual cron: " + err.message, { status: 500 });
+      }
+    }
+
+    if (url.searchParams.has("debug")) {
+      const debugType = url.searchParams.get("debug");
+      try {
+        if (debugType === "data") {
+          const data = await fetchAllCommodities();
+          return jsonResponse(data);
+        }
+        if (debugType === "metals") {
+          const data = await fetchAllMetals();
+          return jsonResponse(data);
+        }
+        if (debugType === "test_metal") {
+          const symbol = url.searchParams.get("symbol") || "GC=F";
+          const data = await fetchCommodity(symbol);
+          return jsonResponse({ symbol, data });
+        }
+        if (debugType === "canola_html") {
+          const snippet = await getTradingEconomicsSnippet("canola");
+          return new Response(snippet, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+        }
+      } catch (err) {
+        return new Response("Debug error: " + err.message, { status: 500 });
+      }
+    }
+
+    return new Response("Commodity Price Worker Running ✅", {
+      status: 200,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  },
+};
+
+// ─── فرآیند کالاهای اصلی ────────────────────────────────────
+async function processCommodities(env) {
+  const kv = env[KV_NAMESPACE];
+
+  let data;
+  try {
+    data = await fetchAllCommodities();
+  } catch (e) {
+    await handleError(kv, e.message);
+    return;
+  }
+
+  const currentHash = JSON.stringify(data);
+  const lastHash = (await kv.get("last_hash")) || "";
+
+  if (currentHash === lastHash) {
+    const prevErr = await kv.get("error_status");
+    if (prevErr) {
+      await sendRecovery();
+      await kv.put("error_status", "");
+    }
+    return;
+  }
+
+  const message = formatMessage(data);
+  await sendTelegram(message, { parse_mode: "HTML", disable_web_page_preview: true });
+  await kv.put("last_hash", currentHash);
+
+  const prevErr = await kv.get("error_status");
+  if (prevErr) {
+    await sendRecovery();
+    await kv.put("error_status", "");
+  }
+}
+
+// ─── فرآیند فلزات ──────────────────────────────────────────
+async function processMetals(env) {
+  const kv = env[KV_NAMESPACE];
+
+  let data;
+  try {
+    data = await fetchAllMetals();
+  } catch (e) {
+    await handleErrorMetals(kv, e.message);
+    return;
+  }
+
+  const currentHash = JSON.stringify(data);
+  const lastHash = (await kv.get("last_hash_metals")) || "";
+
+  if (currentHash === lastHash) {
+    const prevErr = await kv.get("error_status_metals");
+    if (prevErr) {
+      await sendRecoveryMetals();
+      await kv.put("error_status_metals", "");
+    }
+    return;
+  }
+
+  const message = formatMetalsMessage(data);
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  await sendTelegram(message, { parse_mode: "HTML", disable_web_page_preview: true });
+  await kv.put("last_hash_metals", currentHash);
+
+  const prevErr = await kv.get("error_status_metals");
+  if (prevErr) {
+    await sendRecoveryMetals();
+    await kv.put("error_status_metals", "");
+  }
+}
+
+// ─── دریافت داده‌ها: کالاها ─────────────────────────────────
+async function fetchAllCommodities() {
+  const result = {};
+  for (const item of COMMODITIES) {
+    try {
+      if (item.name === "Canola") {
+        result[item.name] = await fetchTradingEconomics("canola");
+      } else {
+        result[item.name] = await fetchCommodity(item.symbol);
+      }
+    } catch (e) {
+      console.error(`Error fetching ${item.symbol || item.name}:`, e.message);
+      result[item.name] = { price: null, changePercent: null };
+    }
+  }
+  return result;
+}
+
+// ─── دریافت داده‌ها: فلزات ─────────────────────────────────
+async function fetchAllMetals() {
+  const result = {};
+  for (const item of METALS) {
+    try {
+      if (item.custom) {
+        const slug = TE_METALS[item.name] || item.name.toLowerCase().replace(/\s+/g, '-');
+        result[item.name] = await fetchTradingEconomics(slug);
+      } else {
+        result[item.name] = await fetchCommodity(item.symbol);
+      }
+    } catch (e) {
+      console.error(`Error fetching metal ${item.name}:`, e.message);
+      result[item.name] = { price: null, changePercent: null };
+    }
+  }
+  return result;
+}
+
+// ─── تابع عمومی Yahoo Finance ──────────────────────────────
+async function fetchCommodity(symbol) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; CommodityBot/1.0)" },
+  });
+  if (!res.ok) throw new Error(`Yahoo HTTP ${res.status}`);
+  const json = await res.json();
+  const meta = json?.chart?.result?.[0]?.meta;
+  if (!meta) throw new Error("No meta data");
+
+  const price = meta.regularMarketPrice;
+  const prevClose = meta.chartPreviousClose || meta.previousClose;
+  if (price == null || prevClose == null) throw new Error("Missing price or previous close");
+
+  const change = price - prevClose;
+  const changePercent = (change / prevClose) * 100;
+
+  return {
+    price: price.toFixed(2),
+    changePercent: changePercent.toFixed(2),
+  };
+}
+
+// ─── تابع عمومی TradingEconomics ───────────────────────────
+async function fetchTradingEconomics(slug) {
+  const url = `https://tradingeconomics.com/commodity/${slug}`;
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Referer": "https://tradingeconomics.com/",
+    },
+  });
+  if (!res.ok) throw new Error(`TradingEconomics HTTP ${res.status}`);
+  const html = await res.text();
+
+  const priceMatch = html.match(/id\s*=\s*["']market_last["'][^>]*>\s*([\d,]+\.?\d*)/i);
+  const pctMatch = html.match(/id\s*=\s*["']market_daily_Pchg["'][^>]*>\s*([+-]?[\d.]+)\s*%/i);
+
+  if (priceMatch && pctMatch) {
+    return {
+      price: priceMatch[1].replace(/,/g, ""),
+      changePercent: pctMatch[1],
+    };
+  }
+
+  const descMatch = html.match(/rose to ([\d,]+\.?\d*)/i);
+  if (descMatch) {
+    return {
+      price: descMatch[1].replace(/,/g, ""),
+      changePercent: null,
+    };
+  }
+
+  throw new Error(`Could not parse ${slug} data`);
+}
+
+// ─── دیباگ HTML TradingEconomics ───────────────────────────
+async function getTradingEconomicsSnippet(slug) {
+  const url = `https://tradingeconomics.com/commodity/${slug}`;
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Referer": "https://tradingeconomics.com/",
+    },
+  });
+  if (!res.ok) throw new Error(`TradingEconomics HTTP ${res.status}`);
+  const html = await res.text();
+  const idx = html.indexOf("market_last");
+  if (idx !== -1) {
+    return html.substring(Math.max(0, idx - 500), idx + 1500);
+  }
+  const idx2 = html.indexOf("market_daily_Pchg");
+  if (idx2 !== -1) {
+    return html.substring(Math.max(0, idx2 - 500), idx2 + 1500);
+  }
+  return "IDs not found in HTML";
+}
+
+// ─── قالب‌بندی پیام کالاها (با نمایش تغییر صفر) ────────────
+function formatMessage(data) {
+  let text = "<b>💰 Live Commodity Prices</b>\n\n";
+  for (const item of COMMODITIES) {
+    const d = data[item.name];
+    if (!d || !d.price) {
+      text += `${item.emoji} <b>${item.name}</b>: N/A\n\n`;
+      continue;
+    }
+
+    const change = d.changePercent;
+    const changeNum = parseFloat(change);
+
+    text += `${item.emoji} <b>${item.name}</b>\n`;
+    text += `<blockquote>${d.price} ${item.unit}</blockquote>\n`;
+
+    if (changeNum === 0 || change === "0.00" || change === "0") {
+      text += `◻️ 0.00%\n\n`;
+    } else {
+      const isNegative = change.startsWith("-");
+      const emojiTrend = isNegative ? "📉" : "📈";
+      const changeDisplay = change.startsWith("+") || change.startsWith("-") ? change : "+" + change;
+      text += `${emojiTrend} ${changeDisplay}%\n\n`;
+    }
+  }
+  text += `📡 <a href="https://t.me/AUTObotbotlink7">https://t.me/AUTObotbotlink7</a>`;
+  return text.trim();
+}
+
+// ─── قالب‌بندی پیام فلزات (با نمایش تغییر صفر) ─────────────
+function formatMetalsMessage(data) {
+  let text = "<b>🔩 Live Metals Prices</b>\n\n";
+  for (const item of METALS) {
+    const d = data[item.name];
+    if (!d || !d.price) {
+      text += `${item.emoji} <b>${item.name}</b>: N/A\n\n`;
+      continue;
+    }
+
+    const change = d.changePercent;
+    const changeNum = parseFloat(change);
+
+    text += `${item.emoji} <b>${item.name}</b>\n`;
+    text += `<blockquote>${d.price} ${item.unit}</blockquote>\n`;
+
+    if (changeNum === 0 || change === "0.00" || change === "0") {
+      text += `◻️ 0.00%\n\n`;
+    } else {
+      const isNegative = change.startsWith("-");
+      const emojiTrend = isNegative ? "📉" : "📈";
+      const changeDisplay = change.startsWith("+") || change.startsWith("-") ? change : "+" + change;
+      text += `${emojiTrend} ${changeDisplay}%\n\n`;
+    }
+  }
+  text += `📡 <a href="https://t.me/AUTObotbotlink7">https://t.me/AUTObotbotlink7</a>`;
+  return text.trim();
+}
+
+// ─── ارسال به تلگرام ────────────────────────────────────────
+async function sendTelegram(text, extra = {}) {
+  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+  const body = { chat_id: CHAT_ID, text, ...extra };
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Telegram API error: ${err}`);
+  }
+}
+
+// ─── مدیریت خطا (کالاها) ───────────────────────────────────
+async function handleError(kv, msg) {
+  const prev = await kv.get("error_status");
+  if (prev !== msg) {
+    const now = new Date().toLocaleTimeString("fa-IR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Asia/Tehran",
+    });
+    const text = `⚠️ خطا در دریافت قیمت‌ها\n\nعلت:\n${msg}\n\nزمان: ${now}`;
+    try { await sendTelegram(text); } catch (e) { console.error("send error failed:", e); }
+    await kv.put("error_status", msg);
+  }
+}
+async function sendRecovery() {
+  try { await sendTelegram("✅ ارتباط با سایت دوباره برقرار شد."); } catch (e) { console.error("recovery msg failed:", e); }
+}
+
+// ─── مدیریت خطا (فلزات) ────────────────────────────────────
+async function handleErrorMetals(kv, msg) {
+  const prev = await kv.get("error_status_metals");
+  if (prev !== msg) {
+    const now = new Date().toLocaleTimeString("fa-IR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Asia/Tehran",
+    });
+    const text = `⚠️ خطا در دریافت فلزات\n\nعلت:\n${msg}\n\nزمان: ${now}`;
+    try { await sendTelegram(text); } catch (e) { console.error("send error failed:", e); }
+    await kv.put("error_status_metals", msg);
+  }
+}
+async function sendRecoveryMetals() {
+  try { await sendTelegram("✅ ارتباط با سایت فلزات دوباره برقرار شد."); } catch (e) { console.error("recovery msg failed:", e); }
+}
+
+function jsonResponse(data) {
+  return new Response(JSON.stringify(data, null, 2), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
