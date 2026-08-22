@@ -1,0 +1,2587 @@
+// ============================================================
+// TitrXFA NEWS BOT
+// Cloudflare Worker
+// Optimized KV Version
+// ============================================================
+
+
+// ============================================================
+// CONFIG
+// ============================================================
+
+const BOT_TOKEN = "YOUR_BOT_TOKEN";
+
+const CHANNEL = "@TitrXFA";
+
+const NEWS_API =
+  "https://raw.githubusercontent.com/itsyebekhe/rasadai/main/news.json";
+
+const ADMIN_PASSWORD = "CHANGE_THIS_PASSWORD";
+
+
+// حداکثر خبر در هر اجرای Cron
+const MAX_NEWS_PER_RUN = 7;
+
+
+// فاصله بین ارسال خبرها
+const SEND_DELAY_MS = 1800;
+
+
+// حداکثر تلاش Telegram
+const MAX_TELEGRAM_RETRIES = 5;
+
+
+// قفل
+const LOCK_SECONDS = 120;
+
+
+// کل وضعیت ربات فقط در این KV
+const STATE_KEY = "STATE";
+
+
+// ============================================================
+// SLEEP
+// ============================================================
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
+// ============================================================
+// HTML ESCAPE
+// ============================================================
+
+function escapeHTML(value) {
+
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+}
+
+
+// ============================================================
+// ENGLISH DIGITS
+// ============================================================
+
+function toEnglishDigits(value) {
+
+  return String(value ?? "")
+    .replace(/[۰-۹]/g, d =>
+      String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))
+    );
+
+}
+
+
+// ============================================================
+// DEFAULT STATE
+// ============================================================
+
+function defaultState() {
+
+  return {
+
+    sentNewsIds: [],
+
+    categories: {},
+
+    categoryMessageId: null,
+
+    categoryMessagePinned: false,
+
+    lastSync: null,
+
+    lastSyncResult: null
+
+  };
+
+}
+
+
+// ============================================================
+// LOAD STATE
+// فقط یک KV READ
+// ============================================================
+
+async function loadState(env) {
+
+  const raw =
+    await env.DB.get(STATE_KEY);
+
+  if (!raw) {
+
+    return defaultState();
+
+  }
+
+
+  try {
+
+    const state =
+      JSON.parse(raw);
+
+
+    return {
+
+      ...defaultState(),
+
+      ...state,
+
+      sentNewsIds:
+        Array.isArray(state.sentNewsIds)
+          ? state.sentNewsIds
+          : [],
+
+      categories:
+        state.categories &&
+        typeof state.categories === "object"
+          ? state.categories
+          : {}
+
+    };
+
+  } catch {
+
+    return defaultState();
+
+  }
+
+}
+
+
+// ============================================================
+// SAVE STATE
+// فقط یک KV WRITE
+// ============================================================
+
+async function saveState(
+  env,
+  state
+) {
+
+  await env.DB.put(
+    STATE_KEY,
+    JSON.stringify(state)
+  );
+
+}
+
+
+// ============================================================
+// TELEGRAM API
+// ============================================================
+
+async function telegram(
+  method,
+  body
+) {
+
+  for (
+    let attempt = 1;
+    attempt <= MAX_TELEGRAM_RETRIES;
+    attempt++
+  ) {
+
+    const response =
+      await fetch(
+        `https://api.telegram.org/bot${BOT_TOKEN}/${method}`,
+        {
+
+          method: "POST",
+
+          headers: {
+
+            "Content-Type":
+              "application/json"
+
+          },
+
+          body:
+            JSON.stringify(body)
+
+        }
+      );
+
+
+    let data;
+
+    try {
+
+      data =
+        await response.json();
+
+    } catch {
+
+      throw new Error(
+        `Telegram ${method}: invalid response`
+      );
+
+    }
+
+
+    if (data.ok) {
+
+      return data.result;
+
+    }
+
+
+    // --------------------------------------------------------
+    // Telegram 429
+    // --------------------------------------------------------
+
+    if (
+      response.status === 429
+    ) {
+
+      const retryAfter =
+        Number(
+          data.parameters?.retry_after || 10
+        );
+
+
+      console.log(
+        `Telegram 429 - retry after ${retryAfter}s`
+      );
+
+
+      if (
+        attempt === MAX_TELEGRAM_RETRIES
+      ) {
+
+        throw new Error(
+          `Telegram 429 after ${MAX_TELEGRAM_RETRIES} retries`
+        );
+
+      }
+
+
+      await sleep(
+        (retryAfter + 1) * 1000
+      );
+
+
+      continue;
+
+    }
+
+
+    // --------------------------------------------------------
+    // Message is not modified
+    // --------------------------------------------------------
+
+    if (
+      String(
+        data.description || ""
+      )
+      .toLowerCase()
+      .includes(
+        "message is not modified"
+      )
+    ) {
+
+      return null;
+
+    }
+
+
+    throw new Error(
+      `Telegram ${method}: ${
+        data.description ||
+        "Unknown error"
+      }`
+    );
+
+  }
+
+
+  throw new Error(
+    `Telegram ${method}: retry limit exceeded`
+  );
+
+}
+
+
+// ============================================================
+// IMPORTANCE SQUARE
+// ============================================================
+
+function getUrgencySquare(value) {
+
+  const n =
+    Number(value);
+
+
+  if (n >= 9)
+    return "🟥";
+
+
+  if (n >= 7)
+    return "🟧";
+
+
+  if (n >= 5)
+    return "🟨";
+
+
+  if (n >= 3)
+    return "🟩";
+
+
+  return "⬜";
+
+}
+
+
+// ============================================================
+// IMPORTANCE TEXT
+// ============================================================
+
+function getUrgencyText(value) {
+
+  const n =
+    Number(value);
+
+
+  if (n >= 9)
+    return "بسیار مهم";
+
+
+  if (n >= 7)
+    return "مهم";
+
+
+  if (n >= 5)
+    return "متوسط";
+
+
+  if (n >= 3)
+    return "نسبتاً کم";
+
+
+  return "کم";
+
+}
+
+
+// ============================================================
+// SENTIMENT
+// ============================================================
+
+function getSentimentText(value) {
+
+  const n =
+    Number(value);
+
+
+  if (n <= -0.7)
+    return "بسیار منفی";
+
+
+  if (n <= -0.3)
+    return "منفی";
+
+
+  if (n < 0.3)
+    return "خنثی";
+
+
+  if (n < 0.7)
+    return "مثبت";
+
+
+  return "بسیار مثبت";
+
+}
+
+
+// ============================================================
+// SMART HASHTAG
+// ============================================================
+//
+// دیپلماتیک-نظامی
+// ↓
+// #دیپلماتیک_نظامی
+//
+// بین‌الملل
+// ↓
+// #بین‌الملل
+//
+// نیابتی ها
+// ↓
+// #نیابتی_ها
+//
+// ============================================================
+
+function makeHashtag(tag) {
+
+  if (
+    tag === null ||
+    tag === undefined
+  ) {
+
+    return "#خبر";
+
+  }
+
+
+  let value =
+    String(tag).trim();
+
+
+  // حذف # قبلی
+  value =
+    value.replace(
+      /^#+/,
+      ""
+    );
+
+
+  // انواع خط تیره → _
+  value =
+    value.replace(
+      /[-‐-‒–—―﹘﹣－]/g,
+      "_"
+    );
+
+
+  // فاصله → _
+  value =
+    value.replace(
+      /\s+/g,
+      "_"
+    );
+
+
+  // چند underscore → یکی
+  value =
+    value.replace(
+      /_+/g,
+      "_"
+    );
+
+
+  // حذف کاراکترهای اضافی
+  value =
+    value.replace(
+      /[^\p{L}\p{N}_\u200C]/gu,
+      ""
+    );
+
+
+  value =
+    value.replace(
+      /^_+|_+$/g,
+      ""
+    );
+
+
+  if (!value) {
+
+    return "#خبر";
+
+  }
+
+
+  return "#" + value;
+
+}
+
+
+// ============================================================
+// BUILD NEWS MESSAGE
+// ============================================================
+
+function buildNewsMessage(news) {
+
+  if (
+    !news.title_fa ||
+    !String(news.title_fa).trim()
+  ) {
+
+    return null;
+
+  }
+
+
+  let text = "";
+
+
+  // ----------------------------------------------------------
+  // عنوان
+  // ----------------------------------------------------------
+
+  const square =
+    getUrgencySquare(
+      news.urgency
+    );
+
+
+  text +=
+    `${square} <b>${escapeHTML(
+      news.title_fa
+    )}</b>\n\n`;
+
+
+  // ----------------------------------------------------------
+  // متن خبر
+  // ----------------------------------------------------------
+
+  if (
+    Array.isArray(news.summary)
+  ) {
+
+    const summaries =
+      news.summary
+        .filter(
+          item =>
+            item &&
+            String(item).trim()
+        )
+        .map(
+          item =>
+            escapeHTML(item)
+        );
+
+
+    if (
+      summaries.length
+    ) {
+
+      text +=
+        summaries.join(
+          "\n\n"
+        );
+
+
+      text +=
+        "\n\n";
+
+    }
+
+  }
+
+
+  // ----------------------------------------------------------
+  // اثر
+  // ----------------------------------------------------------
+
+  if (
+    news.impact &&
+    String(news.impact).trim()
+  ) {
+
+    text +=
+      `<blockquote>📌 اثر: ${
+        escapeHTML(news.impact)
+      }</blockquote>\n\n`;
+
+  }
+
+
+  // ----------------------------------------------------------
+  // منبع
+  //
+  // فقط نام منبع Spoiler است
+  // ----------------------------------------------------------
+
+  if (
+    news.source &&
+    String(news.source).trim()
+  ) {
+
+    text +=
+      `📰 منبع: <tg-spoiler>${
+        escapeHTML(news.source)
+      }</tg-spoiler>\n\n`;
+
+  }
+
+
+  // ----------------------------------------------------------
+  // هشتگ
+  // ----------------------------------------------------------
+
+  const hashtag =
+    makeHashtag(
+      news.tag
+    );
+
+
+  const urgency =
+    getUrgencyText(
+      news.urgency
+    );
+
+
+  const sentiment =
+    getSentimentText(
+      news.sentiment
+    );
+
+
+  text +=
+    `<b>${hashtag}\n`;
+
+
+  text +=
+    `🚨 اهمیت: ${
+      escapeHTML(urgency)
+    }\n`;
+
+
+  text +=
+    `📊 جهت خبر: ${
+      escapeHTML(sentiment)
+    }</b>`;
+
+
+  // ----------------------------------------------------------
+  // Image Preview
+  // ----------------------------------------------------------
+
+  if (
+    news.image &&
+    String(news.image).trim()
+  ) {
+
+    text +=
+      `\n\n<a href="${
+        escapeHTML(news.image)
+      }">🖼 Image</a>`;
+
+  }
+
+
+  return text;
+
+}
+
+
+// ============================================================
+// SEND NEWS
+// ============================================================
+
+async function sendNews(news) {
+
+  const text =
+    buildNewsMessage(
+      news
+    );
+
+
+  if (!text) {
+
+    throw new Error(
+      "عنوان فارسی خبر وجود ندارد"
+    );
+
+  }
+
+
+  const body = {
+
+    chat_id:
+      CHANNEL,
+
+    text:
+      text,
+
+    parse_mode:
+      "HTML",
+
+    disable_notification:
+      false
+
+  };
+
+
+  if (
+    news.image &&
+    String(news.image).trim()
+  ) {
+
+    body.link_preview_options = {
+
+      is_disabled:
+        false,
+
+      url:
+        String(news.image),
+
+      show_above_text:
+        false,
+
+      prefer_large_media:
+        true
+
+    };
+
+  }
+
+
+  return await telegram(
+    "sendMessage",
+    body
+  );
+
+}
+
+
+// ============================================================
+// FETCH API
+// ============================================================
+
+async function fetchNews() {
+
+  const response =
+    await fetch(
+      `${NEWS_API}?t=${Date.now()}`,
+      {
+
+        headers: {
+
+          "User-Agent":
+            "TitrXFA-Worker/2.0",
+
+          "Cache-Control":
+            "no-cache"
+
+        },
+
+        cf: {
+
+          cacheTtl: 0,
+
+          cacheEverything: false
+
+        }
+
+      }
+    );
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      `News API HTTP ${response.status}`
+    );
+
+  }
+
+
+  const data =
+    await response.json();
+
+
+  if (
+    Array.isArray(data)
+  ) {
+
+    return data;
+
+  }
+
+
+  if (
+    Array.isArray(data.news)
+  ) {
+
+    return data.news;
+
+  }
+
+
+  if (
+    Array.isArray(data.data)
+  ) {
+
+    return data.data;
+
+  }
+
+
+  return [];
+
+}
+
+
+// ============================================================
+// UTC DATE
+// ============================================================
+
+function getUTCDateFromTimestamp(
+  timestamp
+) {
+
+  const n =
+    Number(timestamp);
+
+
+  if (
+    !Number.isFinite(n)
+  ) {
+
+    return null;
+
+  }
+
+
+  const date =
+    new Date(
+      n * 1000
+    );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return null;
+
+  }
+
+
+  return date
+    .toISOString()
+    .slice(0, 10);
+
+}
+
+
+// ============================================================
+// TODAY UTC
+// ============================================================
+
+function getTodayUTC() {
+
+  return new Date()
+    .toISOString()
+    .slice(0, 10);
+
+}
+
+
+// ============================================================
+// CATEGORY MESSAGE
+// فقط >= 17
+// ============================================================
+
+function buildCategoryMessage(
+  categories
+) {
+
+  const entries =
+    Object.entries(
+      categories || {}
+    )
+    .map(
+      ([name, count]) => [
+
+        name,
+
+        Number(count)
+
+      ]
+    )
+    .filter(
+      ([, count]) =>
+        count >= 17
+    )
+    .sort(
+      (a, b) => {
+
+        const diff =
+          b[1] - a[1];
+
+
+        if (
+          diff !== 0
+        ) {
+
+          return diff;
+
+        }
+
+
+        return String(a[0])
+          .localeCompare(
+            String(b[0]),
+            "fa"
+          );
+
+      }
+    );
+
+
+  let text =
+    "📊 <b>دسته‌بندی اخبار — هشتگ‌های پرکاربرد</b>\n\n";
+
+
+  if (
+    !entries.length
+  ) {
+
+    return (
+      text +
+      "<i>هنوز هشتگی به ۱۷ خبر نرسیده است.</i>"
+    );
+
+  }
+
+
+  for (
+    const [
+      name,
+      count
+    ]
+    of entries
+  ) {
+
+    const hashtag =
+      makeHashtag(name);
+
+
+    text +=
+      `<b>${hashtag}</b>  <b>${
+        toEnglishDigits(count)
+      }</b>\n`;
+
+  }
+
+
+  return text.trim();
+
+}
+
+
+// ============================================================
+// CREATE CATEGORY MESSAGE
+// ============================================================
+
+async function createCategoryMessage(
+  env,
+  state
+) {
+
+  const text =
+    buildCategoryMessage(
+      state.categories
+    );
+
+
+  const result =
+    await telegram(
+      "sendMessage",
+      {
+
+        chat_id:
+          CHANNEL,
+
+        text:
+          text,
+
+        parse_mode:
+          "HTML",
+
+        disable_web_page_preview:
+          true
+
+      }
+    );
+
+
+  if (
+    !result?.message_id
+  ) {
+
+    throw new Error(
+      "Telegram message_id برنگرداند"
+    );
+
+  }
+
+
+  state.categoryMessageId =
+    result.message_id;
+
+
+  // ----------------------------------------------------------
+  // فقط یک بار Pin
+  // ----------------------------------------------------------
+
+  try {
+
+    await telegram(
+      "pinChatMessage",
+      {
+
+        chat_id:
+          CHANNEL,
+
+        message_id:
+          result.message_id,
+
+        disable_notification:
+          true
+
+      }
+    );
+
+
+    state.categoryMessagePinned =
+      true;
+
+  } catch(error) {
+
+    console.error(
+      "Pin failed:",
+      error.message
+    );
+
+
+    state.categoryMessagePinned =
+      false;
+
+  }
+
+}
+
+
+// ============================================================
+// UPDATE CATEGORY MESSAGE
+// ============================================================
+
+async function updateCategoryMessage(
+  state
+) {
+
+  // ----------------------------------------------------------
+  // اگر پیام وجود ندارد → ایجاد
+  // ----------------------------------------------------------
+
+  if (
+    !state.categoryMessageId
+  ) {
+
+    return false;
+
+  }
+
+
+  const text =
+    buildCategoryMessage(
+      state.categories
+    );
+
+
+  try {
+
+    await telegram(
+      "editMessageText",
+      {
+
+        chat_id:
+          CHANNEL,
+
+        message_id:
+          Number(
+            state.categoryMessageId
+          ),
+
+        text:
+          text,
+
+        parse_mode:
+          "HTML",
+
+        disable_web_page_preview:
+          true
+
+      }
+    );
+
+
+    return true;
+
+  } catch(error) {
+
+    const message =
+      String(
+        error.message || ""
+      )
+      .toLowerCase();
+
+
+    // --------------------------------------------------------
+    // پیام دیگر وجود ندارد
+    // --------------------------------------------------------
+
+    if (
+      message.includes(
+        "message to edit not found"
+      ) ||
+      message.includes(
+        "message can't be edited"
+      )
+    ) {
+
+      state.categoryMessageId =
+        null;
+
+
+      state.categoryMessagePinned =
+        false;
+
+
+      return false;
+
+    }
+
+
+    throw error;
+
+  }
+
+}
+
+
+// ============================================================
+// UPDATE CATEGORY
+// ============================================================
+
+async function updateCategory(
+  state,
+  tag
+) {
+
+  const cleanTag =
+    String(
+      tag || "سایر"
+    ).trim();
+
+
+  if (!cleanTag) {
+
+    return;
+
+  }
+
+
+  if (
+    !Object.prototype.hasOwnProperty
+      .call(
+        state.categories,
+        cleanTag
+      )
+  ) {
+
+    state.categories[cleanTag] =
+      0;
+
+  }
+
+
+  state.categories[cleanTag] =
+    Number(
+      state.categories[cleanTag]
+    ) + 1;
+
+}
+
+
+// ============================================================
+// LOCK
+//
+// lock هم داخل همان STATE نگهداری نمی‌شود.
+// چون در صورت همزمانی باید مستقل باشد.
+// فقط یک Read/Write در صورت نیاز.
+// ============================================================
+
+async function acquireLock(env) {
+
+  const now =
+    Date.now();
+
+
+  const old =
+    await env.DB.get(
+      "LOCK"
+    );
+
+
+  if (old) {
+
+    const age =
+      now -
+      Number(old);
+
+
+    if (
+      Number.isFinite(age) &&
+      age <
+        LOCK_SECONDS * 1000
+    ) {
+
+      return false;
+
+    }
+
+  }
+
+
+  await env.DB.put(
+    "LOCK",
+    String(now),
+    {
+
+      expirationTtl:
+        LOCK_SECONDS
+
+    }
+  );
+
+
+  return true;
+
+}
+
+
+async function releaseLock(env) {
+
+  await env.DB.delete(
+    "LOCK"
+  );
+
+}
+
+
+// ============================================================
+// PROCESS NEWS
+// ============================================================
+
+async function processNews(env) {
+
+  const locked =
+    await acquireLock(
+      env
+    );
+
+
+  if (!locked) {
+
+    return {
+
+      ok: false,
+
+      locked: true,
+
+      message:
+        "Sync دیگری در حال اجراست."
+
+    };
+
+  }
+
+
+  try {
+
+    // --------------------------------------------------------
+    // فقط یک بار State
+    // --------------------------------------------------------
+
+    const state =
+      await loadState(
+        env
+      );
+
+
+    // --------------------------------------------------------
+    // API
+    // --------------------------------------------------------
+
+    const allNews =
+      await fetchNews();
+
+
+    const todayUTC =
+      getTodayUTC();
+
+
+    // --------------------------------------------------------
+    // Set برای سرعت بیشتر
+    // --------------------------------------------------------
+
+    const sentSet =
+      new Set(
+        state.sentNewsIds
+          .map(
+            id =>
+              String(id)
+          )
+      );
+
+
+    // --------------------------------------------------------
+    // فقط اخبار امروز UTC
+    // --------------------------------------------------------
+
+    const todayNews =
+      allNews
+        .filter(news => {
+
+          if (
+            !news ||
+            !news.id ||
+            !news.timestamp
+          ) {
+
+            return false;
+
+          }
+
+
+          return (
+            getUTCDateFromTimestamp(
+              news.timestamp
+            ) ===
+            todayUTC
+          );
+
+        })
+        .sort(
+          (a, b) =>
+            Number(
+              a.timestamp || 0
+            ) -
+            Number(
+              b.timestamp || 0
+            )
+        );
+
+
+    // --------------------------------------------------------
+    // حداکثر ۷ خبر جدید
+    // --------------------------------------------------------
+
+    const pending =
+      todayNews
+        .filter(
+          news =>
+            !sentSet.has(
+              String(news.id)
+            )
+        )
+        .filter(
+          news =>
+            news.title_fa &&
+            String(
+              news.title_fa
+            ).trim()
+        )
+        .slice(
+          0,
+          MAX_NEWS_PER_RUN
+        );
+
+
+    let sent =
+      0;
+
+
+    let failed =
+      0;
+
+
+    // --------------------------------------------------------
+    // ارسال
+    // --------------------------------------------------------
+
+    for (
+      const news
+      of pending
+    ) {
+
+      const id =
+        String(
+          news.id
+        );
+
+
+      // محافظ دوم
+      if (
+        sentSet.has(id)
+      ) {
+
+        continue;
+
+      }
+
+
+      try {
+
+        await sendNews(
+          news
+        );
+
+
+        // ----------------------------------------------------
+        // فقط بعد از ارسال موفق
+        // ----------------------------------------------------
+
+        sentSet.add(
+          id
+        );
+
+
+        // دسته
+        await updateCategory(
+          state,
+          news.tag
+        );
+
+
+        sent++;
+
+
+        if (
+          sent <
+          pending.length
+        ) {
+
+          await sleep(
+            SEND_DELAY_MS
+          );
+
+        }
+
+
+      } catch(error) {
+
+        failed++;
+
+
+        console.error(
+          `News ${id} failed:`,
+          error.message
+        );
+
+
+        // ID ذخیره نمی‌شود
+        // در Cron بعدی دوباره تلاش می‌شود
+
+      }
+
+    }
+
+
+    // --------------------------------------------------------
+    // محدود کردن لیست ID
+    // --------------------------------------------------------
+    //
+    // برای جلوگیری از رشد بی‌نهایت State
+    //
+    // 5000 ID آخر حفظ می‌شود.
+    //
+    // --------------------------------------------------------
+
+    state.sentNewsIds =
+      Array.from(
+        sentSet
+      )
+      .slice(-5000);
+
+
+    // --------------------------------------------------------
+    // پیام دسته‌بندی
+    // --------------------------------------------------------
+
+    if (
+      state.categoryMessageId
+    ) {
+
+      await updateCategoryMessage(
+        state
+      );
+
+    }
+
+
+    // --------------------------------------------------------
+    // اگر پیام دسته‌بندی قبلاً حذف شده بود
+    // --------------------------------------------------------
+
+    if (
+      !state.categoryMessageId
+    ) {
+
+      await createCategoryMessage(
+        env,
+        state
+      );
+
+    }
+
+
+    // --------------------------------------------------------
+    // آخرین Sync
+    // --------------------------------------------------------
+
+    const now =
+      new Date()
+        .toISOString();
+
+
+    state.lastSync =
+      now;
+
+
+    state.lastSyncResult = {
+
+      utcDate:
+        todayUTC,
+
+      totalApiNews:
+        allNews.length,
+
+      todayNews:
+        todayNews.length,
+
+      pending:
+        pending.length,
+
+      sent:
+        sent,
+
+      failed:
+        failed,
+
+      time:
+        now
+
+    };
+
+
+    // --------------------------------------------------------
+    // فقط یک WRITE برای کل State
+    // --------------------------------------------------------
+
+    await saveState(
+      env,
+      state
+    );
+
+
+    return {
+
+      ok: true,
+
+      utcDate:
+        todayUTC,
+
+      totalApiNews:
+        allNews.length,
+
+      todayNews:
+        todayNews.length,
+
+      pending:
+        pending.length,
+
+      sent:
+        sent,
+
+      failed:
+        failed
+
+    };
+
+  } finally {
+
+    await releaseLock(
+      env
+    );
+
+  }
+
+}
+
+
+// ============================================================
+// AUTH
+// ============================================================
+
+function authorized(request) {
+
+  const url =
+    new URL(
+      request.url
+    );
+
+
+  const password =
+    url.searchParams.get(
+      "password"
+    );
+
+
+  return (
+    password ===
+    ADMIN_PASSWORD
+  );
+
+}
+
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+
+function dashboardHTML(
+  state
+) {
+
+  const categories =
+    Object.entries(
+      state.categories || {}
+    )
+    .sort(
+      (a, b) =>
+        Number(b[1]) -
+        Number(a[1])
+    );
+
+
+  const popular =
+    categories.filter(
+      ([, count]) =>
+        Number(count) >= 17
+    );
+
+
+  const rows =
+    popular.length
+
+      ?
+
+      popular.map(
+        ([name, count]) => `
+
+<div class="category">
+
+<span>
+${escapeHTML(
+  makeHashtag(name)
+)}
+</span>
+
+<b>
+${toEnglishDigits(count)}
+</b>
+
+</div>
+
+`
+      ).join("")
+
+      :
+
+      `
+<div class="muted">
+هنوز هشتگی به ۱۷ خبر نرسیده است.
+</div>
+`;
+
+
+  return `
+
+<!DOCTYPE html>
+
+<html lang="fa" dir="rtl">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="width=device-width,initial-scale=1">
+
+<title>TitrXFA</title>
+
+<style>
+
+* {
+box-sizing:border-box;
+}
+
+body {
+
+margin:0;
+
+background:#0d1117;
+
+color:#f0f6fc;
+
+font-family:
+Arial,
+Tahoma,
+sans-serif;
+
+}
+
+.container {
+
+max-width:760px;
+
+margin:auto;
+
+padding:10px;
+
+}
+
+.card {
+
+background:#161b22;
+
+border:
+1px solid #30363d;
+
+border-radius:18px;
+
+padding:17px;
+
+margin-bottom:12px;
+
+}
+
+.stats {
+
+display:grid;
+
+grid-template-columns:
+1fr 1fr;
+
+gap:10px;
+
+}
+
+.stat {
+
+background:#0d1117;
+
+border-radius:14px;
+
+padding:15px;
+
+}
+
+.number {
+
+font-size:26px;
+
+font-weight:900;
+
+}
+
+.muted {
+
+color:#8b949e;
+
+font-size:14px;
+
+}
+
+button {
+
+width:100%;
+
+padding:14px;
+
+border:0;
+
+border-radius:13px;
+
+margin-top:8px;
+
+background:#238636;
+
+color:#fff;
+
+font-size:16px;
+
+font-weight:800;
+
+}
+
+button:disabled {
+
+opacity:.5;
+
+}
+
+.category {
+
+display:flex;
+
+justify-content:space-between;
+
+padding:12px 2px;
+
+border-bottom:
+1px solid #30363d;
+
+font-weight:900;
+
+}
+
+a {
+
+color:#58a6ff;
+
+text-decoration:none;
+
+}
+
+pre {
+
+direction:ltr;
+
+white-space:pre-wrap;
+
+word-break:break-word;
+
+background:#0d1117;
+
+padding:12px;
+
+border-radius:12px;
+
+font-size:12px;
+
+}
+
+.status {
+
+margin-top:10px;
+
+color:#8b949e;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+
+<div class="container">
+
+
+<div class="card">
+
+<h1>
+📰 TitrXFA
+</h1>
+
+<div class="muted">
+پنل مدیریت ربات خبری
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="stats">
+
+
+<div class="stat">
+
+<div class="muted">
+کل IDهای ذخیره‌شده
+</div>
+
+<div class="number">
+
+${toEnglishDigits(
+  state.sentNewsIds.length
+)}
+
+</div>
+
+</div>
+
+
+<div class="stat">
+
+<div class="muted">
+هشتگ‌های پرکاربرد
+</div>
+
+<div class="number">
+
+${toEnglishDigits(
+  popular.length
+)}
+
+</div>
+
+</div>
+
+
+</div>
+
+</div>
+
+
+<div class="card">
+
+<h3>
+⚙️ کنترل
+</h3>
+
+
+<button
+id="syncButton"
+onclick="syncNews()">
+
+🔄 دریافت و ارسال اخبار امروز
+
+</button>
+
+
+<button
+onclick="location.reload()">
+
+♻️ بروزرسانی پنل
+
+</button>
+
+
+<div
+id="status"
+class="status">
+
+آماده
+
+</div>
+
+</div>
+
+
+<div class="card">
+
+<h3>
+📌 پیام دسته‌بندی
+</h3>
+
+
+<div class="muted">
+Message ID
+</div>
+
+<p>
+
+<b>
+${
+  state.categoryMessageId ||
+  "-"
+}
+</b>
+
+</p>
+
+
+<div class="muted">
+وضعیت Pin
+</div>
+
+<p>
+
+${
+  state.categoryMessagePinned
+  ?
+  "📌 Pin شده"
+  :
+  "⚠️ Pin نشده"
+}
+
+</p>
+
+
+${
+  state.categoryMessageId
+  ?
+  `<a
+href="https://t.me/TitrXFA/${state.categoryMessageId}"
+target="_blank">
+مشاهده پیام دسته‌بندی
+</a>`
+  :
+  "-"
+}
+
+</div>
+
+
+<div class="card">
+
+<h3>
+📊 دسته‌بندی اخبار — هشتگ‌های پرکاربرد
+</h3>
+
+${rows}
+
+</div>
+
+
+<div class="card">
+
+<h3>
+🕐 آخرین Sync
+</h3>
+
+<pre>
+
+${
+  state.lastSync ||
+  "هنوز اجرا نشده"
+}
+
+</pre>
+
+</div>
+
+
+<div class="card">
+
+<h3>
+📋 نتیجه آخرین Sync
+</h3>
+
+<pre>
+
+${
+  state.lastSyncResult
+    ? JSON.stringify(
+        state.lastSyncResult,
+        null,
+        2
+      )
+    : "-"
+}
+
+</pre>
+
+</div>
+
+
+</div>
+
+
+<script>
+
+async function syncNews() {
+
+
+const button =
+document.getElementById(
+"syncButton"
+);
+
+
+const status =
+document.getElementById(
+"status"
+);
+
+
+const params =
+new URLSearchParams(
+location.search
+);
+
+
+const password =
+params.get(
+"password"
+);
+
+
+button.disabled =
+true;
+
+
+status.textContent =
+"⏳ در حال بررسی اخبار امروز UTC...";
+
+
+try {
+
+
+const response =
+await fetch(
+"/api/sync?password=" +
+encodeURIComponent(
+password || ""
+)
+);
+
+
+const data =
+await response.json();
+
+
+if (
+data.locked
+) {
+
+status.textContent =
+"⏳ Sync دیگری در حال اجراست.";
+
+button.disabled =
+false;
+
+return;
+
+}
+
+
+if (
+!data.ok
+) {
+
+throw new Error(
+data.error ||
+"خطا"
+);
+
+}
+
+
+status.textContent =
+"✅ انجام شد — ارسال: " +
+data.sent;
+
+
+setTimeout(
+() => location.reload(),
+1200
+);
+
+
+} catch(error) {
+
+
+status.textContent =
+"❌ " +
+error.message;
+
+
+button.disabled =
+false;
+
+}
+
+}
+
+</script>
+
+
+</body>
+
+</html>
+
+`;
+
+}
+
+
+// ============================================================
+// WORKER
+// ============================================================
+
+export default {
+
+
+  async fetch(
+    request,
+    env,
+    ctx
+  ) {
+
+    const url =
+      new URL(
+        request.url
+      );
+
+
+    // --------------------------------------------------------
+    // DASHBOARD
+    // --------------------------------------------------------
+
+    if (
+      url.pathname === "/"
+    ) {
+
+      if (
+        !authorized(request)
+      ) {
+
+        return new Response(
+
+`
+
+<!DOCTYPE html>
+
+<html lang="fa" dir="rtl">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="width=device-width,initial-scale=1">
+
+<title>TitrXFA Login</title>
+
+<style>
+
+body {
+
+background:#0d1117;
+
+color:#fff;
+
+font-family:Arial;
+
+padding:15px;
+
+}
+
+.box {
+
+max-width:400px;
+
+margin:80px auto;
+
+background:#161b22;
+
+border:
+1px solid #30363d;
+
+border-radius:18px;
+
+padding:22px;
+
+}
+
+input,
+button {
+
+width:100%;
+
+padding:14px;
+
+margin-top:10px;
+
+border-radius:12px;
+
+border:
+1px solid #30363d;
+
+}
+
+input {
+
+background:#0d1117;
+
+color:#fff;
+
+}
+
+button {
+
+background:#238636;
+
+color:#fff;
+
+font-weight:bold;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+
+<div class="box">
+
+
+<h2>
+📰 TitrXFA
+</h2>
+
+
+<p>
+ورود به پنل
+</p>
+
+
+<form>
+
+<input
+type="password"
+name="password"
+placeholder="رمز پنل"
+required
+>
+
+<button>
+ورود
+</button>
+
+</form>
+
+
+</div>
+
+
+</body>
+
+</html>
+
+`,
+
+          {
+
+            headers: {
+
+              "Content-Type":
+                "text/html; charset=UTF-8"
+
+            }
+
+          }
+
+        );
+
+      }
+
+
+      // فقط یک KV READ
+      const state =
+        await loadState(
+          env
+        );
+
+
+      return new Response(
+
+        dashboardHTML(
+          state
+        ),
+
+        {
+
+          headers: {
+
+            "Content-Type":
+              "text/html; charset=UTF-8"
+
+          }
+
+        }
+
+      );
+
+    }
+
+
+    // --------------------------------------------------------
+    // SYNC
+    // --------------------------------------------------------
+
+    if (
+      url.pathname === "/api/sync"
+    ) {
+
+      if (
+        !authorized(request)
+      ) {
+
+        return new Response(
+
+          JSON.stringify({
+
+            ok:false,
+
+            error:
+              "Unauthorized"
+
+          }),
+
+          {
+
+            status:401,
+
+            headers: {
+
+              "Content-Type":
+                "application/json"
+
+            }
+
+          }
+
+        );
+
+      }
+
+
+      try {
+
+        const result =
+          await processNews(
+            env
+          );
+
+
+        return new Response(
+
+          JSON.stringify(
+            result
+          ),
+
+          {
+
+            headers: {
+
+              "Content-Type":
+                "application/json"
+
+            }
+
+          }
+
+        );
+
+
+      } catch(error) {
+
+        console.error(
+          error
+        );
+
+
+        return new Response(
+
+          JSON.stringify({
+
+            ok:false,
+
+            error:
+              error.message
+
+          }),
+
+          {
+
+            status:500,
+
+            headers: {
+
+              "Content-Type":
+                "application/json"
+
+            }
+
+          }
+
+        );
+
+      }
+
+    }
+
+
+    // --------------------------------------------------------
+    // HEALTH
+    // --------------------------------------------------------
+
+    if (
+      url.pathname === "/health"
+    ) {
+
+      return new Response(
+
+        JSON.stringify({
+
+          ok:true,
+
+          bot:
+            "TitrXFA",
+
+          channel:
+            CHANNEL,
+
+          utc:
+            new Date()
+              .toISOString()
+
+        }),
+
+        {
+
+          headers: {
+
+            "Content-Type":
+              "application/json"
+
+          }
+
+        }
+
+      );
+
+    }
+
+
+    return new Response(
+      "TitrXFA Worker",
+      {
+        status:404
+      }
+    );
+
+  },
+
+
+  // ==========================================================
+  // CRON
+  // ==========================================================
+
+  async scheduled(
+    event,
+    env,
+    ctx
+  ) {
+
+    ctx.waitUntil(
+      processNews(env)
+    );
+
+  }
+
+};
