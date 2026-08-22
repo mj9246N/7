@@ -1,0 +1,615 @@
+
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="fs-16 gap-16">
+  <head>
+        <meta charset="utf-8" />
+<meta name="Generator" content="Drupal 11 (https://www.drupal.org)" />
+<meta name="MobileOptimized" content="width" />
+<meta name="HandheldFriendly" content="true" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style id="solo-css-injector">.satellite-channels-table .solo-table-wrapper table{width:100% !important;table-layout:fixed !important;}.satellite-channels-table .solo-table-wrapper th:nth-child(1),.satellite-channels-table .solo-table-wrapper td:nth-child(1){width:20% !important;}.satellite-channels-table .solo-table-wrapper th:nth-child(2),.satellite-channels-table .solo-table-wrapper td:nth-child(2){width:5% !important;}.satellite-channels-table .solo-table-wrapper th:nth-child(3),.satellite-channels-table .solo-table-wrapper td:nth-child(3){width:30% !important;}.satellite-channels-table .solo-table-wrapper th:nth-child(4),.satellite-channels-table .solo-table-wrapper td:nth-child(4){width:8% !important;}.satellite-channels-table .solo-table-wrapper th:nth-child(5),.satellite-channels-table .solo-table-wrapper td:nth-child(5){width:8% !important;}.satellite-channels-table .solo-table-wrapper th:nth-child(6),.satellite-channels-table .solo-table-wrapper td:nth-child(6){width:9% !important;}.satellite-channels-table .solo-table-wrapper th:nth-child(7),.satellite-channels-table .solo-table-wrapper td:nth-child(7){width:12% !important;}.satellites-list .solo-table-wrapper table{width:100% !important;table-layout:fixed !important;}.satellites-list .solo-table-wrapper th:nth-child(1),.satellites-list .solo-table-wrapper td:nth-child(1){width:30% !important;text-align:center !important;}.satellites-list .solo-table-wrapper th:nth-child(2),.satellites-list .solo-table-wrapper td:nth-child(2){width:30% !important;text-align:center !important;}.satellites-list .solo-table-wrapper th:nth-child(3),.satellites-list .solo-table-wrapper td:nth-child(3){width:30% !important;text-align:center !important;}.satellites-list .solo-table-wrapper th:nth-child(4),.satellites-list .solo-table-wrapper td:nth-child(4){width:10% !important;text-align:center !important;}</style>
+<script src="/sites/default/files/solo/js/solo-js-dynamic.js?tk3fot" defer></script>
+<link rel="icon" href="/themes/solo/favicon.ico" type="image/vnd.microsoft.icon" />
+
+    <title>Latest Changes | Sat Inform</title>
+    <link rel="stylesheet" media="all" href="/sites/default/files/css/css_9ZMYNtvRG8Ejzc0jcsXdwBLgS4-DVT9Tw90AfpAgN-0.css?delta=0&amp;language=en&amp;theme=solo&amp;include=eJxdjl0KwjAQhC-UNU_qeXabpS3NZksmVby9wYrUvnwwfzDw7BEdNHTUzqSJ8EJTo8aCgF9jzC6cSarysvpcGghC1_vt0DEt20n-DaycB158mKqbEtbMmA7Z94YpwKOCEtcl7GYUhobHrE_EDy_macv6BgfRTuQ" />
+<link rel="stylesheet" media="all" href="/sites/default/files/css/css_HbwJpnaKHoKNOnJE5brxZ0634BseNHuBultrkKs1OL8.css?delta=1&amp;language=en&amp;theme=solo&amp;include=eJxdjl0KwjAQhC-UNU_qeXabpS3NZksmVby9wYrUvnwwfzDw7BEdNHTUzqSJ8EJTo8aCgF9jzC6cSarysvpcGghC1_vt0DEt20n-DaycB158mKqbEtbMmA7Z94YpwKOCEtcl7GYUhobHrE_EDy_macv6BgfRTuQ" />
+
+    
+  </head>
+  <body class="views-page path-view-latest path-latest">
+                      <a href="#header-content" class="visually-hidden focusable skip-link">Skip to header</a>
+              <a href="#main-navigation-content" class="visually-hidden focusable skip-link">Skip to main navigation</a>
+              <a href="#main-content" class="visually-hidden focusable skip-link">Skip to main content</a>
+              <a href="#footer-content" class="visually-hidden focusable skip-link">Skip to footer</a>
+    
+    
+      <div class="dialog-off-canvas-main-canvas" data-off-canvas-main-canvas>
+    
+<!-- Start: Page Wrapper -->
+
+<div id="page-wrapper" class="page-wrapper sw-1440 sb-576 mn-576 solo__bc-scroll" >
+
+            
+    
+  
+  
+            
+            
+    
+
+      
+        <!-- Start: System Messages -->
+    <div id="system-messages" role="region" aria-label="System Messages" class="solo-outer lone system-messages" >
+      <div id="system-messages-inner" class="solo-inner solo-col solo-col-1 system-messages-inner">
+            <nav  id="block-solo-main-menu" class="block block-menu navigation menu--main" aria-labelledby="block-solo-main-menu-menu" role="navigation">
+
+                    
+    <h2 class="visually-hidden block__title" id="block-solo-main-menu-menu">Main navigation</h2>
+    
+  
+        <div class="solo-clear solo-menu navigation-default">
+                        <ul  class="navigation__menubar navigation__default navigation__menubar-main"
+             id="main-menubar" role="menubar">
+                                
+                                                              
+                                                    
+                                                
+                                                
+            
+            
+                                                
+                                                   <li class="btn-animate nav__menu-item nav__menu-item-main nav__menubar-item link-only" role='none' data-link-type="link">
+                                                                            
+                                                                                        <a href="/" class="nav__menu-link nav__menu-link-main" role="menuitem" tabindex="-1" data-drupal-link-system-path="&lt;front&gt;" data-inactive="true">                <span class="menu__url-title">Home</span>
+              </a>
+                                                                            </li>
+        
+                                    
+                                                    
+                                                
+                                                
+            
+            
+                                                
+                                                   <li class="btn-animate nav__menu-item nav__menu-item-main nav__menubar-item link-only" role='none' data-link-type="link">
+                                                                            
+                                                                                        <a href="/satellites" class="nav__menu-link nav__menu-link-main" role="menuitem" tabindex="-1" data-drupal-link-system-path="satellites" data-inactive="true">                <span class="menu__url-title">Sat List</span>
+              </a>
+                                                                            </li>
+        
+                                    
+                                                    
+                                                
+                                                
+            
+            
+                                                
+                                                   <li class="btn-animate nav__menu-item nav__menu-item-main nav__menubar-item link-only is-active" role='none' data-link-type="link">
+                                                                            
+                                                                                        <a href="/latest" class="nav__menu-link nav__menu-link-main" role="menuitem" tabindex="-1" data-drupal-link-system-path="latest" aria-current="page">                <span class="menu__url-title">Sat News</span>
+              </a>
+                                                                            </li>
+        
+                                    
+                                                    
+                                                
+                                                
+            
+            
+                                                
+                                                   <li class="btn-animate nav__menu-item nav__menu-item-main nav__menubar-item link-only" role='none' data-link-type="link">
+                                                                            
+                                                                                        <a href="/beam" class="nav__menu-link nav__menu-link-main" role="menuitem" tabindex="-1" data-drupal-link-system-path="beam" data-inactive="true">                <span class="menu__url-title">Beams</span>
+              </a>
+                                                                            </li>
+        
+                                                              
+                                                    
+                                                
+                                                
+            
+            
+                                                
+                                    <li class="btn-animate nav__menu-item nav__menu-item-main nav__menubar-item has-sub__menu link-and-button" role='none' data-menu-parent="true" data-link-type="link">
+                                                                            <a href="/" class="nav__menu-link nav__menu-link-main url-added"tabindex="-1" data-drupal-link-system-path="&lt;front&gt;" role='menuitem'>
+                    <span class="menu__url-title-enabled">Packages</span>
+                </a>
+                <button class="en-link dropdown-toggler dropdown-toggler-parent"  data-drupal-selector="main-sub-menu-5" role="menuitem" aria-controls="main-sub-menu-5" aria-haspopup="true" aria-expanded="false" tabindex="-1" type="button" data-menu-item-id="5">
+                    <span class="visually-hidden">Packages sub-navigation</span>
+                    <span class="toggler-icon dropdown-arrow">      <svg aria-hidden="true" width="24" height="24" viewbox="0 0 24 24" stroke-width="2" stroke-linecap="butt" stroke-linejoin="bevel" fill="none" stroke="currentColor" class="svg-stroke">
+    <path d="M6 9l6 6 6-6"/>
+  </svg>
+</span>
+                </button>
+            
+                                                                                            <ul  class="sub__menu sub__menu-main" id="main-sub-menu-5" tabindex="-1"
+                 id="main-submenu--2" role="menu" tabindex="-1" aria-hidden="true">
+                                    
+                                    
+                                                    
+                                                
+                                                
+            
+            
+                                                
+                                                   <li class="btn-animate nav__menu-item nav__menu-item-main nav__submenu-item link-only" role='none' data-link-type="link">
+                                                                            
+                                                                                        <a href="/channels/packages/persiana" class="nav__menu-link nav__menu-link-main" role="menuitem" tabindex="-1" data-drupal-link-system-path="channels/packages/persiana" data-inactive="true">                <span class="menu__url-title">Persiana Package</span>
+              </a>
+                                                                            </li>
+        
+                                    
+                                                    
+                                                
+                                                
+            
+            
+                                                
+                                                   <li class="btn-animate nav__menu-item nav__menu-item-main nav__submenu-item link-only" role='none' data-link-type="link">
+                                                                            
+                                                                                        <a href="/channels/packages/gem" class="nav__menu-link nav__menu-link-main" role="menuitem" tabindex="-1" data-drupal-link-system-path="channels/packages/gem" data-inactive="true">                <span class="menu__url-title">GEM Package</span>
+              </a>
+                                                                            </li>
+        
+                                    
+                                                    
+                                                
+                                                
+            
+            
+                                                
+                                                   <li class="btn-animate nav__menu-item nav__menu-item-main nav__submenu-item link-only" role='none' data-link-type="link">
+                                                                            
+                                                                                        <a href="/channels/packages/irib" class="nav__menu-link nav__menu-link-main" role="menuitem" tabindex="-1" data-drupal-link-system-path="channels/packages/irib" data-inactive="true">                <span class="menu__url-title">IRIB Package</span>
+              </a>
+                                                                            </li>
+        
+                                    
+                                                    
+                                                
+                                                
+            
+            
+                                                
+                                                   <li class="btn-animate nav__menu-item nav__menu-item-main nav__submenu-item link-only" role='none' data-link-type="link">
+                                                                            
+                                                                                        <a href="/channels/packages/mbc" class="nav__menu-link nav__menu-link-main" role="menuitem" tabindex="-1" data-drupal-link-system-path="channels/packages/mbc" data-inactive="true">                <span class="menu__url-title">MBC Package</span>
+              </a>
+                                                                            </li>
+        
+                                    
+                                                    
+                                                
+                                                
+            
+            
+                                                
+                                                   <li class="btn-animate nav__menu-item nav__menu-item-main nav__submenu-item link-only" role='none' data-link-type="link">
+                                                                            
+                                                                                        <a href="/channels/packages/trt" class="nav__menu-link nav__menu-link-main" role="menuitem" tabindex="-1" data-drupal-link-system-path="channels/packages/trt" data-inactive="true">                <span class="menu__url-title">TRT Package</span>
+              </a>
+                                                                            </li>
+        
+                                    
+                                                    
+                                                
+                                                
+            
+            
+                                                
+                                                   <li class="btn-animate nav__menu-item nav__menu-item-main nav__submenu-item link-only" role='none' data-link-type="link">
+                                                                            
+                                                                                        <a href="/channels/packages/rai" class="nav__menu-link nav__menu-link-main" role="menuitem" tabindex="-1" data-drupal-link-system-path="channels/packages/rai" data-inactive="true">                <span class="menu__url-title">Rai Package</span>
+              </a>
+                                                                            </li>
+        
+                                    
+                                                    
+                                                
+                                                
+            
+            
+                                                
+                                                   <li class="btn-animate nav__menu-item nav__menu-item-main nav__submenu-item link-only" role='none' data-link-type="link">
+                                                                            
+                                                                                        <a href="/channels/packages/bbc" class="nav__menu-link nav__menu-link-main" role="menuitem" tabindex="-1" data-drupal-link-system-path="channels/packages/bbc" data-inactive="true">                <span class="menu__url-title">BBC Package</span>
+              </a>
+                                                                            </li>
+                    </ul>
+
+                            </li>
+        
+                                    
+                                                    
+                                                
+                                                
+            
+            
+                                                
+                                                   <li class="btn-animate nav__menu-item nav__menu-item-main nav__menubar-item link-only" role='none' data-link-type="link">
+                                                                            
+                                                                                        <a href="/channels/search" class="nav__menu-link nav__menu-link-main" role="menuitem" tabindex="-1" data-drupal-link-system-path="channels/search" data-inactive="true">                <span class="menu__url-title">TV Search !</span>
+              </a>
+                                                                            </li>
+                    </ul>
+
+</div>
+
+  </nav>
+
+
+      </div>
+    </div>
+    <!-- End: System Messages -->
+  
+    
+        <!-- Start: Page Title -->
+    <div id="breadcrumb" aria-label="Breadcrumb" class="solo-outer lone breadcrumb" >
+      <div id="breadcrumb-inner" class="solo-inner solo-col solo-col-1 fade-inner breadcrumb-inner">
+            
+
+<section id="block-solo-breadcrumbs" class="solo-clear solo-block block-system block-system-breadcrumb-block">
+          
+        
+  
+      
+  <nav class="solo-block breadcrumb-nav" role="navigation" aria-labelledby="system-breadcrumb">
+    <h2 id="system-breadcrumb" class="visually-hidden">Breadcrumb</h2>
+    <ul class="solo-ul solo-medium breadcrumb-menu">
+              <li>
+                                    <a class="btn-animate" href="/">Home</a>
+                                                  <svg class="breadcrumb-sep" height="24" viewBox="0 -960 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
+                <path d="m504-480-184-184 56-56 240 240-240 240-56-56z"/>
+              </svg>
+                              </li>
+              <li>
+                                    <span class="breadcrumb-title">Latest Changes</span>
+                                                      </li>
+          </ul>
+  </nav>
+
+  </section>
+
+
+      </div>
+    </div>
+    <!-- End: Page Title -->
+  
+  
+
+
+      
+
+
+
+
+  <!-- Start: Main -->
+  <div id="main-container" class="solo-outer multi main-container active-main-1" >
+    <div id="main-container-inner" class="solo-inner solo-col main-container-inner solo-col-1 main-left-right">
+      <!-- Start: Main Container -->
+
+    
+          <!-- Start: Main Content -->
+      <div id="sidebar-box-main" class="region-outer main-box sidebar-box-main" role="main">
+        <div class="region-inner main-box-inner sidebar-box-main-inner fade-inner region-left" >
+                    <a id="main-content" tabindex="-1"></a>
+                        <div data-drupal-messages-fallback class="hidden"></div>
+
+<section id="block-solo-content" class="solo-clear solo-block block-system block-system-main-block">
+          
+        
+  
+      <div class="views-element-container container-children-1 solo-clear element-container-wrapper"><div class="solo-clear view view-latest view-id-latest view-display-id-page_1 js-view-dom-id-a9613d928c71f41c7fc5e942215d3e843ce74beb6d82bd07e3ecc94dee1fbce6">
+  
+    
+      
+      <div class="view-content">
+      
+<div class="solo-table-wrapper solo-responsive">
+  <table class="solo-table-all views-table views-view-table cols-0">
+      <tbody>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Baawah TV</strong> on <strong><a href="/channels/badr-8">Badr 8</a></strong> [<a href="/beam/Badr/8/NWAfrica" hreflang="en">NW Africa</a>] [12,265 Horizontal 27500] - [ <time datetime="2026-08-22T02:36:22+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Adoa TV</strong> on <strong><a href="/channels/badr-8">Badr 8</a></strong> [<a href="/beam/Badr/8/NWAfrica" hreflang="en">NW Africa</a>] [12,265 Horizontal 27500] - [ <time datetime="2026-08-22T02:32:37+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ❌ <strong>Action TV (Ghana)</strong> left from <strong><a href="/channels/badr-8">Badr 8</a></strong> [<a href="/beam/Badr/8/NWAfrica" hreflang="en">NW Africa</a>] [12,265 Horizontal 27500] - [ <time datetime="2026-08-22T01:27:05+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ❌ <strong>King of Kings TV</strong> left from <strong><a href="/channels/badr-8">Badr 8</a></strong> [<a href="/beam/Badr/8/NWAfrica" hreflang="en">NW Africa</a>] [12,265 Horizontal 27500] - [ <time datetime="2026-08-22T01:26:54+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ❌ <strong>NAB TV</strong> left from <strong><a href="/channels/badr-8">Badr 8</a></strong> [<a href="/beam/Badr/8/NWAfrica" hreflang="en">NW Africa</a>] [12,265 Horizontal 27500] - [ <time datetime="2026-08-22T01:25:16+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ❌ <strong>Cafe Trade TV</strong> left from <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [10,762 Vertical 27500] - [ <time datetime="2026-08-22T01:17:39+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>TVP Seriale</strong> on <strong><a href="/channels/hotbird-13g">Hotbird 13G</a></strong> [<a href="/node/3915" hreflang="en">Wide</a>] [10,719 Vertical 27500] - [ <time datetime="2026-08-22T00:24:57+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Private TV HD</strong> on <strong><a href="/channels/hotbird-13g">Hotbird 13G</a></strong> [<a href="/node/3915" hreflang="en">Wide</a>] [10,719 Vertical 27500] - [ <time datetime="2026-08-22T00:24:10+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Blue Hustler</strong> on <strong><a href="/channels/hotbird-13g">Hotbird 13G</a></strong> [<a href="/node/3915" hreflang="en">Wide</a>] [10,719 Vertical 27500] - [ <time datetime="2026-08-22T00:23:33+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Hustler HD</strong> on <strong><a href="/channels/hotbird-13g">Hotbird 13G</a></strong> [<a href="/node/3915" hreflang="en">Wide</a>] [10,719 Vertical 27500] - [ <time datetime="2026-08-22T00:22:24+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>TVP Info HD</strong> on <strong><a href="/channels/hotbird-13g">Hotbird 13G</a></strong> [<a href="/node/3915" hreflang="en">Wide</a>] [10,719 Vertical 27500] - [ <time datetime="2026-08-22T00:20:03+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Canal+ Kuchnia HD</strong> on <strong><a href="/channels/hotbird-13g">Hotbird 13G</a></strong> [<a href="/node/3915" hreflang="en">Wide</a>] [10,719 Vertical 27500] - [ <time datetime="2026-08-22T00:19:45+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Canal+ Domo HD</strong> on <strong><a href="/channels/hotbird-13g">Hotbird 13G</a></strong> [<a href="/node/3915" hreflang="en">Wide</a>] [10,719 Vertical 27500] - [ <time datetime="2026-08-22T00:19:22+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>TVP HD</strong> on <strong><a href="/channels/hotbird-13g">Hotbird 13G</a></strong> [<a href="/node/3915" hreflang="en">Wide</a>] [10,719 Vertical 27500] - [ <time datetime="2026-08-22T00:18:34+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Canal+ Extra 1</strong> on <strong><a href="/channels/hotbird-13g">Hotbird 13G</a></strong> [<a href="/node/3915" hreflang="en">Wide</a>] [10,719 Vertical 27500] - [ <time datetime="2026-08-22T00:14:04+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>BBC Earth HD</strong> on <strong><a href="/channels/hotbird-13g">Hotbird 13G</a></strong> [<a href="/node/3915" hreflang="en">Wide</a>] [10,719 Vertical 27500] - [ <time datetime="2026-08-22T00:12:55+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>BBC First HD</strong> on <strong><a href="/channels/hotbird-13g">Hotbird 13G</a></strong> [<a href="/node/3915" hreflang="en">Wide</a>] [10,719 Vertical 27500] - [ <time datetime="2026-08-22T00:12:11+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Canal+ 360</strong> on <strong><a href="/channels/hotbird-13g">Hotbird 13G</a></strong> [<a href="/node/3915" hreflang="en">Wide</a>] [10,719 Vertical 27500] - [ <time datetime="2026-08-22T00:10:37+00:00" title="August 22, 2026">August 22, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ❌ <strong>Persiana China</strong> left from <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-21T16:30:00+00:00" title="August 21, 2026">August 21, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ❌ <strong>Persiana Podcast</strong> left from <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-21T16:30:00+00:00" title="August 21, 2026">August 21, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ❌ <strong>Persiana Rap</strong> left from <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-21T16:30:00+00:00" title="August 21, 2026">August 21, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ❌ <strong>Persiana Voyage</strong> left from <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-21T16:30:00+00:00" title="August 21, 2026">August 21, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ❌ <strong>4 Turk</strong> left from <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-21T16:30:00+00:00" title="August 21, 2026">August 21, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Mifa +</strong> on <strong><a href="/channels/al-yahsat-1">Al Yah 1</a></strong> [<a href="/beam/Yahsat1A/East" hreflang="en">East</a>] [12,034 Vertical 27500] - [ <time datetime="2026-08-21T16:00:00+00:00" title="August 21, 2026">August 21, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Setareh TV</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-21T03:12:00+00:00" title="August 21, 2026">August 21, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>DEJ TV</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-21T03:11:00+00:00" title="August 21, 2026">August 21, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Iran Wire</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-21T03:10:00+00:00" title="August 21, 2026">August 21, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ❌ <strong>Persiana Documentary</strong> left from <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-21T03:00:02+00:00" title="August 21, 2026">August 21, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ❌ <strong>Persiana Folk</strong> left from <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-21T03:00:01+00:00" title="August 21, 2026">August 21, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ❌ <strong>Persiana Medical</strong> left from <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-21T03:00:00+00:00" title="August 21, 2026">August 21, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>GEM Fashion</strong> on <strong><a href="/channels/al-yahsat-1">Al Yah 1</a></strong> [<a href="/beam/Yahsat1A/East" hreflang="en">East</a>] [12,034 Vertical 27500] - [ <time datetime="2026-08-21T02:00:00+00:00" title="August 21, 2026">August 21, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ❌ <strong>GEM Mifa +</strong> left from <strong><a href="/channels/al-yahsat-1">Al Yah 1</a></strong> [<a href="/beam/Yahsat1A/East" hreflang="en">East</a>] [12,034 Vertical 27500] - [ <time datetime="2026-08-21T01:59:00+00:00" title="August 21, 2026">August 21, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ❌ <strong>GEM AZ</strong> left from <strong><a href="/channels/al-yahsat-1">Al Yah 1</a></strong> [<a href="/beam/Yahsat1A/East" hreflang="en">East</a>] [12,034 Vertical 27500] - [ <time datetime="2026-08-21T01:00:00+00:00" title="August 21, 2026">August 21, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Iran International</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-20T18:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Iran International</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/Mena" hreflang="en">Mena</a>] [11,420 Horizontal 27500] - [ <time datetime="2026-08-20T18:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>AVA Family</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/Mena" hreflang="en">Mena</a>] [11,420 Horizontal 27500] - [ <time datetime="2026-08-20T12:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>AVA Family</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-20T12:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>AVA Series</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/Mena" hreflang="en">Mena</a>] [11,420 Horizontal 27500] - [ <time datetime="2026-08-20T12:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>AVA Series</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-20T12:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>FX 1 HD</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-20T12:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>FX 1 HD</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/Mena" hreflang="en">Mena</a>] [11,420 Horizontal 27500] - [ <time datetime="2026-08-20T12:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>FX 2 HD</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-20T12:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>FX 2 HD</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/Mena" hreflang="en">Mena</a>] [11,420 Horizontal 27500] - [ <time datetime="2026-08-20T12:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Persiana Medical</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/Mena" hreflang="en">Mena</a>] [11,420 Horizontal 27500] - [ <time datetime="2026-08-20T12:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Persiana Folk</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/Mena" hreflang="en">Mena</a>] [11,420 Horizontal 27500] - [ <time datetime="2026-08-20T12:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Persiana Documentary</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/Mena" hreflang="en">Mena</a>] [11,420 Horizontal 27500] - [ <time datetime="2026-08-20T12:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Persiana China</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/Mena" hreflang="en">Mena</a>] [11,420 Horizontal 27500] - [ <time datetime="2026-08-20T12:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Persiana Podcast</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/Mena" hreflang="en">Mena</a>] [11,420 Horizontal 27500] - [ <time datetime="2026-08-20T12:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Persiana Rap</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/Mena" hreflang="en">Mena</a>] [11,420 Horizontal 27500] - [ <time datetime="2026-08-20T12:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Persiana Voyage</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/Mena" hreflang="en">Mena</a>] [11,420 Horizontal 27500] - [ <time datetime="2026-08-20T12:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>4 Turk</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/Mena" hreflang="en">Mena</a>] [11,420 Horizontal 27500] - [ <time datetime="2026-08-20T12:00:00+00:00" title="August 20, 2026">August 20, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Iran International</strong> on <strong><a href="/channels/eutelsat-7c">Eutelsat 7C</a></strong> [<a href="/beam/Eutelsat7C/East" hreflang="en">East</a>] [11,410 Vertical 30000] - [ <time datetime="2026-08-18T12:00:00+00:00" title="August 18, 2026">August 18, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Persiana Medical</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-16T12:00:00+00:00" title="August 16, 2026">August 16, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Persiana Folk</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-16T12:00:00+00:00" title="August 16, 2026">August 16, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Persiana Documentary</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-16T12:00:00+00:00" title="August 16, 2026">August 16, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Persiana China</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-16T12:00:00+00:00" title="August 16, 2026">August 16, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Persiana Podcast</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-16T12:00:00+00:00" title="August 16, 2026">August 16, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Persiana Rap</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-16T12:00:00+00:00" title="August 16, 2026">August 16, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>Persiana Voyage</strong> on <strong><a href="/channels/turkmenalem-monacosat">TurkmenÄlem/MonacoSat</a></strong> [<a href="/beam/Turkmen%C3%84lem-MonacoSat/East" hreflang="en">East</a>] [11,382 Vertical 27500] - [ <time datetime="2026-08-16T12:00:00+00:00" title="August 16, 2026">August 16, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ❌ <strong>IITV</strong> left from <strong><a href="/channels/express-am6">Express AM6</a></strong> [<a href="/beam/ExpressAM6/KuFixed2" hreflang="en">Ku Fixed 2</a>] [12,594 Vertical 27500] - [ <time datetime="2026-08-14T12:00:00+00:00" title="August 14, 2026">August 14, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ✅ <strong>IITV</strong> on <strong><a href="/channels/express-am6">Express AM6</a></strong> [<a href="/beam/ExpressAM6/KuFixed2" hreflang="en">Ku Fixed 2</a>] [12,594 Vertical 27500] - [ <time datetime="2026-08-11T12:00:00+00:00" title="August 11, 2026">August 11, 2026</time>
+]          </td>
+              </tr>
+          <tr>
+                                                                                        <td class="views-field views-field-nothing"> ❌ <strong>Iran International</strong> left from <strong><a href="/channels/express-am6">Express AM6</a></strong> [<a href="/beam/ExpressAM6/KuFixed2" hreflang="en">Ku Fixed 2</a>] [12,594 Vertical 27500] - [ <time datetime="2026-08-10T12:00:00+00:00" title="August 10, 2026">August 10, 2026</time>
+]          </td>
+              </tr>
+      </tbody>
+  </table>
+</div>
+
+    </div>
+  
+      
+          </div>
+</div>
+
+  </section>
+
+
+        </div>
+      </div>
+      <!-- End: Main Content -->
+    
+    
+      <!-- End: Main Container -->
+    </div>
+  </div>
+<!-- End: Main -->
+
+    
+      
+    
+      
+    
+        <!-- Start: Copyright -->
+    <div id="copyright" class="solo-outer lone copyright"  aria-label="Site Copyright and Credit">
+      <div id="copyright-inner" class="solo-inner solo-col copyright-inner solo-col-2">
+            <!-- Start: Copyright -->
+      <p class="copyright-first">
+        Copyright © 2026 SatInform - All rights reserved
+      </p>
+      <!-- End: Copyright -->
+                      <!-- Start: Credit Link -->
+      <p class="copyright-second">
+        Developed and Designed by <a href="https://telegram.me/satlastnews" title="Satellites Last News" target="_blank" rel="noopener noreferrer">Satellites Last News</a>
+      </p>
+      <!-- End: Credit Link -->
+            </div>
+    </div>
+    <!-- End: Copyright -->
+  </div>
+<!-- End: Page Wrapper -->
+
+  </div>
+
+    
+    <script type="application/json" data-drupal-selector="drupal-settings-json">{"path":{"baseUrl":"\/","pathPrefix":"","currentPath":"latest","currentPathIsAdmin":false,"isFront":false,"currentLanguage":"en","currentQuery":{"items_per_page":"All"}},"pluralDelimiter":"\u0003","suppressDeprecationErrors":true,"ajaxPageState":{"libraries":"eJxdjlEOwjAMQy_U0C_gPGkbbWNNM9UdaLenGgiN_TwpjmUbls2jg2JH7UySCBuaKDUOcPg5hmyBM4UqPC82lQZCoOv9dvA8QGkrrFM8iCplPZ1_KVpOKWrF4lhNhbBkxnj4fbepADxIr-M6u4_oA0Pcc5IX_M6LWlqzvAHMtVbV","theme":"solo","theme_token":null},"ajaxTrustedUrl":[],"solo":{"keyboardMenus":[],"slideUpSpeed":350,"slideDownSpeed":500,"megaMenuSpeed":800},"user":{"uid":0,"permissionsHash":"1575c3f70f9c993d54bf5ad246051208805af2d855daffdf3deeff657ea8dffc"}}</script>
+<script src="/core/assets/vendor/jquery/jquery.min.js?v=4.0.0"></script>
+<script src="/sites/default/files/js/js_GArynPaJ1tqZAVI_3ZwR2sgfVbTUTPw2KvA22uHsV7c.js?scope=footer&amp;delta=1&amp;language=en&amp;theme=solo&amp;include=eJwrzs_J1y8GErq5qXmlACnMBYw"></script>
+
+  </body>
+<script>'undefined'=== typeof _trfq || (window._trfq = []);'undefined'=== typeof _trfd && (window._trfd=[]),_trfd.push({'tccl.baseHost':'secureserver.net'},{'ap':'cpsh-oh'},{'server':'sg2plzcpnl506753'},{'dcenter':'sg2'},{'cp_id':'11003763'},{'cp_cl':'8'}) // Monitoring performance to make your website faster. If you want to opt-out, please contact web hosting support.</script><script src='https://img1.wsimg.com/traffic-assets/js/tccl.min.js'></script></html>
