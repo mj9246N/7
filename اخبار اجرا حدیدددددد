@@ -1,0 +1,2200 @@
+// ============================================================
+// TitrXFA - FINAL CLOUDFLARE WORKER
+// ============================================================
+
+const BOT_TOKEN = "YOUR_BOT_TOKEN";
+const CHANNEL = "@TitrXFA";
+const ADMIN_PASSWORD = "CHANGE_THIS_PASSWORD";
+
+const NEWS_API =
+  "https://raw.githubusercontent.com/itsyebekhe/rasadai/main/news.json";
+
+const MAX_NEWS_PER_RUN = 7;
+const SEND_DELAY_MS = 1800;
+const MAX_TELEGRAM_RETRIES = 5;
+
+const STATE_KEY = "STATE";
+const LOCK_KEY = "LOCK";
+
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function sleep(ms) {
+  return new Promise(function (resolve) {
+    setTimeout(resolve, ms);
+  });
+}
+
+
+function escapeHTML(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+
+function toEnglishDigits(value) {
+  return String(value == null ? "" : value)
+    .replace(/[۰-۹]/g, function (d) {
+      return String("۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+    });
+}
+
+
+function parseJSON(value, fallback) {
+  if (!value) {
+    return fallback;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch (e) {
+    return fallback;
+  }
+}
+
+
+// ============================================================
+// DEFAULT STATE
+// ============================================================
+
+function defaultState() {
+  return {
+    version: 2,
+    sentNewsIds: [],
+    categories: {},
+    categoryMessageId: null,
+    categoryMessagePinned: false,
+    lastSync: null,
+    lastSyncResult: null,
+    migrated: false
+  };
+}
+
+
+// ============================================================
+// KV STATE + AUTOMATIC MIGRATION
+// ============================================================
+
+async function loadState(env) {
+
+  const stateRaw =
+    await env.DB.get(STATE_KEY);
+
+  if (stateRaw) {
+
+    const parsed =
+      parseJSON(stateRaw, null);
+
+    if (parsed) {
+
+      const state =
+        defaultState();
+
+      state.version =
+        Number(parsed.version || 2);
+
+      state.sentNewsIds =
+        Array.isArray(parsed.sentNewsIds)
+          ? parsed.sentNewsIds
+              .map(function (id) {
+                return String(id);
+              })
+          : [];
+
+      state.categories =
+        parsed.categories &&
+        typeof parsed.categories === "object" &&
+        !Array.isArray(parsed.categories)
+          ? parsed.categories
+          : {};
+
+      state.categoryMessageId =
+        parsed.categoryMessageId
+          ? Number(parsed.categoryMessageId)
+          : null;
+
+      state.categoryMessagePinned =
+        parsed.categoryMessagePinned === true;
+
+      state.lastSync =
+        parsed.lastSync || null;
+
+      state.lastSyncResult =
+        parsed.lastSyncResult || null;
+
+      state.migrated =
+        parsed.migrated === true;
+
+      return state;
+    }
+  }
+
+
+  // ----------------------------------------------------------
+  // Automatic migration from old KV keys
+  // ----------------------------------------------------------
+
+  const state =
+    defaultState();
+
+
+  const oldSentRaw =
+    await env.DB.get("sent_news_ids");
+
+  const oldSent =
+    parseJSON(
+      oldSentRaw,
+      []
+    );
+
+
+  if (Array.isArray(oldSent)) {
+
+    state.sentNewsIds =
+      oldSent
+        .map(function (id) {
+          return String(id);
+        })
+        .slice(-5000);
+  }
+
+
+  const oldCategoriesRaw =
+    await env.DB.get("categories");
+
+  const oldCategories =
+    parseJSON(
+      oldCategoriesRaw,
+      {}
+    );
+
+
+  if (
+    oldCategories &&
+    typeof oldCategories === "object" &&
+    !Array.isArray(oldCategories)
+  ) {
+
+    state.categories =
+      oldCategories;
+  }
+
+
+  const oldMessageId =
+    await env.DB.get(
+      "category_message_id"
+    );
+
+
+  if (oldMessageId) {
+
+    const messageId =
+      Number(oldMessageId);
+
+    if (
+      Number.isFinite(messageId)
+    ) {
+      state.categoryMessageId =
+        messageId;
+    }
+  }
+
+
+  const oldPinned =
+    await env.DB.get(
+      "category_message_pinned"
+    );
+
+
+  if (oldPinned === "true") {
+    state.categoryMessagePinned =
+      true;
+  }
+
+
+  state.migrated = true;
+
+
+  await env.DB.put(
+    STATE_KEY,
+    JSON.stringify(state)
+  );
+
+
+  console.log(
+    "Automatic KV migration completed."
+  );
+
+
+  return state;
+}
+
+
+async function saveState(env, state) {
+
+  await env.DB.put(
+    STATE_KEY,
+    JSON.stringify(state)
+  );
+}
+
+
+// ============================================================
+// TELEGRAM API
+// ============================================================
+
+async function telegram(method, body) {
+
+  for (
+    let attempt = 1;
+    attempt <= MAX_TELEGRAM_RETRIES;
+    attempt++
+  ) {
+
+    const response =
+      await fetch(
+        "https://api.telegram.org/bot" +
+        BOT_TOKEN +
+        "/" +
+        method,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(body)
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (data.ok) {
+      return data.result;
+    }
+
+
+    if (
+      response.status === 429
+    ) {
+
+      const retryAfter =
+        Number(
+          data.parameters &&
+          data.parameters.retry_after
+            ? data.parameters.retry_after
+            : 10
+        );
+
+
+      if (
+        attempt >=
+        MAX_TELEGRAM_RETRIES
+      ) {
+
+        throw new Error(
+          "Telegram rate limit exceeded"
+        );
+      }
+
+
+      console.log(
+        "Telegram 429. Retry after " +
+        retryAfter +
+        " seconds."
+      );
+
+
+      await sleep(
+        (retryAfter + 1) * 1000
+      );
+
+
+      continue;
+    }
+
+
+    const description =
+      String(
+        data.description || ""
+      );
+
+
+    if (
+      description
+        .toLowerCase()
+        .includes(
+          "message is not modified"
+        )
+    ) {
+
+      return null;
+    }
+
+
+    throw new Error(
+      description ||
+      "Telegram API error"
+    );
+  }
+
+
+  throw new Error(
+    "Telegram API error"
+  );
+}
+
+
+// ============================================================
+// IMPORTANCE
+// ============================================================
+
+function getUrgencySquare(value) {
+
+  const n =
+    Number(value) || 0;
+
+
+  if (n >= 9) {
+    return "🟥";
+  }
+
+  if (n >= 7) {
+    return "🟧";
+  }
+
+  if (n >= 5) {
+    return "🟨";
+  }
+
+  if (n >= 3) {
+    return "🟩";
+  }
+
+  return "⬜";
+}
+
+
+function getUrgencyText(value) {
+
+  const n =
+    Number(value) || 0;
+
+
+  if (n >= 9) {
+    return "بسیار مهم";
+  }
+
+  if (n >= 7) {
+    return "مهم";
+  }
+
+  if (n >= 5) {
+    return "متوسط";
+  }
+
+  if (n >= 3) {
+    return "نسبتاً کم";
+  }
+
+  return "کم";
+}
+
+
+// ============================================================
+// SENTIMENT
+// ============================================================
+
+function getSentimentText(value) {
+
+  const n =
+    Number(value) || 0;
+
+
+  if (n <= -0.7) {
+    return "بسیار منفی";
+  }
+
+  if (n <= -0.3) {
+    return "منفی";
+  }
+
+  if (n < 0.3) {
+    return "خنثی";
+  }
+
+  if (n < 0.7) {
+    return "مثبت";
+  }
+
+  return "بسیار مثبت";
+}
+
+
+// ============================================================
+// SMART HASHTAG
+// ============================================================
+
+function makeHashtag(tag) {
+
+  let value =
+    String(
+      tag == null ? "" : tag
+    ).trim();
+
+
+  value =
+    value.replace(
+      /^#+/,
+      ""
+    );
+
+
+  value =
+    value.replace(
+      /[\u200B\u200C\u200D\uFEFF]/g,
+      ""
+    );
+
+
+  value =
+    value.replace(
+      /ي/g,
+      "ی"
+    );
+
+
+  value =
+    value.replace(
+      /ى/g,
+      "ی"
+    );
+
+
+  value =
+    value.replace(
+      /ك/g,
+      "ک"
+    );
+
+
+  // Dash -> underscore
+  value =
+    value.replace(
+      /[-‐-‒–—―﹘﹣－]/g,
+      "_"
+    );
+
+
+  // Spaces -> underscore
+  value =
+    value.replace(
+      /\s+/g,
+      "_"
+    );
+
+
+  // Remove punctuation
+  value =
+    value.replace(
+      /[^\p{L}\p{N}_]/gu,
+      ""
+    );
+
+
+  value =
+    value.replace(
+      /_+/g,
+      "_"
+    );
+
+
+  value =
+    value.replace(
+      /^_+|_+$/g,
+      ""
+    );
+
+
+  if (!value) {
+    return "#خبر";
+  }
+
+
+  return "#" + value;
+}
+
+
+// ============================================================
+// NEWS MESSAGE
+// ============================================================
+
+function buildNewsMessage(news) {
+
+  if (
+    !news ||
+    !news.title_fa ||
+    !String(news.title_fa).trim()
+  ) {
+
+    return null;
+  }
+
+
+  const square =
+    getUrgencySquare(
+      news.urgency
+    );
+
+
+  let text =
+    square +
+    " <b>" +
+    escapeHTML(
+      news.title_fa
+    ) +
+    "</b>\n\n";
+
+
+  // ----------------------------------------------------------
+  // Persian text only
+  // ----------------------------------------------------------
+
+  if (
+    Array.isArray(news.summary)
+  ) {
+
+    const summaries =
+      news.summary
+        .filter(function (item) {
+
+          return (
+            item &&
+            String(item).trim()
+          );
+        })
+        .map(function (item) {
+
+          return escapeHTML(item);
+        });
+
+
+    if (
+      summaries.length > 0
+    ) {
+
+      text +=
+        summaries.join(
+          "\n\n"
+        );
+
+      text +=
+        "\n\n";
+    }
+  }
+
+
+  // ----------------------------------------------------------
+  // Impact / quote style
+  // ----------------------------------------------------------
+
+  if (
+    news.impact &&
+    String(news.impact).trim()
+  ) {
+
+    text +=
+      "<blockquote>📌 اثر: " +
+      escapeHTML(
+        news.impact
+      ) +
+      "</blockquote>\n\n";
+  }
+
+
+  // ----------------------------------------------------------
+  // Source
+  // "📰 منبع:" is NOT spoiler.
+  // Only source name is spoiler.
+  // ----------------------------------------------------------
+
+  if (
+    news.source &&
+    String(news.source).trim()
+  ) {
+
+    text +=
+      "📰 منبع: " +
+      "<tg-spoiler>" +
+      escapeHTML(
+        news.source
+      ) +
+      "</tg-spoiler>\n\n";
+  }
+
+
+  // ----------------------------------------------------------
+  // Hashtag + importance + direction
+  // ----------------------------------------------------------
+
+  const hashtag =
+    makeHashtag(
+      news.tag
+    );
+
+
+  const urgency =
+    getUrgencyText(
+      news.urgency
+    );
+
+
+  const sentiment =
+    getSentimentText(
+      news.sentiment
+    );
+
+
+  text +=
+    "<b>" +
+    hashtag +
+    "\n" +
+    "🚨 اهمیت: " +
+    escapeHTML(
+      urgency
+    ) +
+    "\n" +
+    "📊 جهت خبر: " +
+    escapeHTML(
+      sentiment
+    ) +
+    "</b>";
+
+
+  // ----------------------------------------------------------
+  // IMAGE
+  // Text = 🖼 Image
+  // Hyperlink = actual image URL
+  // Preview is handled by sendNews()
+  // ----------------------------------------------------------
+
+  if (
+    news.image &&
+    String(news.image).trim()
+  ) {
+
+    text +=
+      "\n\n<a href=\"" +
+      escapeHTML(
+        news.image
+      ) +
+      "\">🖼 Image</a>";
+  }
+
+
+  return text;
+}
+
+
+// ============================================================
+// SEND NEWS
+// ============================================================
+
+async function sendNews(news) {
+
+  const text =
+    buildNewsMessage(
+      news
+    );
+
+
+  if (!text) {
+
+    throw new Error(
+      "خبر فاقد عنوان فارسی است."
+    );
+  }
+
+
+  const hasImage =
+    Boolean(
+      news.image &&
+      String(news.image).trim()
+    );
+
+
+  const body = {
+
+    chat_id:
+      CHANNEL,
+
+    text:
+      text,
+
+    parse_mode:
+      "HTML"
+
+  };
+
+
+  // ----------------------------------------------------------
+  // RESTORED IMAGE PREVIEW
+  // ----------------------------------------------------------
+
+  if (hasImage) {
+
+    body.link_preview_options = {
+
+      is_disabled:
+        false,
+
+      url:
+        String(
+          news.image
+        ),
+
+      show_above_text:
+        false,
+
+      prefer_large_media:
+        true
+    };
+
+  } else {
+
+    body.link_preview_options = {
+
+      is_disabled:
+        true
+
+    };
+  }
+
+
+  return telegram(
+    "sendMessage",
+    body
+  );
+}
+
+
+// ============================================================
+// FETCH NEWS API
+// ============================================================
+
+async function fetchNews() {
+
+  const response =
+    await fetch(
+      NEWS_API +
+      "?t=" +
+      Date.now(),
+      {
+        method: "GET",
+
+        headers: {
+          "Cache-Control":
+            "no-cache"
+        },
+
+        cf: {
+          cacheTtl: 0
+        }
+      }
+    );
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      "API HTTP " +
+      response.status
+    );
+  }
+
+
+  const data =
+    await response.json();
+
+
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+
+  if (
+    data &&
+    Array.isArray(data.news)
+  ) {
+
+    return data.news;
+  }
+
+
+  if (
+    data &&
+    Array.isArray(data.data)
+  ) {
+
+    return data.data;
+  }
+
+
+  return [];
+}
+
+
+// ============================================================
+// UTC
+// ============================================================
+
+function timestampDateUTC(timestamp) {
+
+  const n =
+    Number(timestamp);
+
+
+  if (!Number.isFinite(n)) {
+    return null;
+  }
+
+
+  const date =
+    new Date(
+      n * 1000
+    );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return null;
+  }
+
+
+  return date
+    .toISOString()
+    .slice(0, 10);
+}
+
+
+function todayUTC() {
+
+  return new Date()
+    .toISOString()
+    .slice(0, 10);
+}
+
+
+// ============================================================
+// CATEGORY MESSAGE
+// ============================================================
+
+function buildCategoryMessage(
+  categories
+) {
+
+  const popular =
+    Object.entries(
+      categories || {}
+    )
+    .map(function (entry) {
+
+      return {
+
+        name:
+          String(entry[0]),
+
+        count:
+          Number(entry[1]) || 0
+
+      };
+
+    })
+    .filter(function (item) {
+
+      return item.count >= 17;
+
+    })
+    .sort(function (a, b) {
+
+      if (
+        b.count !==
+        a.count
+      ) {
+
+        return (
+          b.count -
+          a.count
+        );
+      }
+
+
+      return a.name.localeCompare(
+        b.name,
+        "fa"
+      );
+
+    });
+
+
+  let text =
+    "📊 <b>دسته‌بندی اخبار — هشتگ‌های پرکاربرد</b>\n\n";
+
+
+  if (
+    popular.length === 0
+  ) {
+
+    text +=
+      "<i>هنوز هشتگی به ۱۷ خبر نرسیده است.</i>";
+
+    return text;
+  }
+
+
+  popular.forEach(function (item) {
+
+    text +=
+      "<b>" +
+      escapeHTML(
+        makeHashtag(
+          item.name
+        )
+      ) +
+      "</b>  " +
+      "<b>" +
+      toEnglishDigits(
+        item.count
+      ) +
+      "</b>\n";
+
+  });
+
+
+  return text.trim();
+}
+
+
+// ============================================================
+// CREATE CATEGORY MESSAGE
+// ============================================================
+
+async function createCategoryMessage(
+  env,
+  state
+) {
+
+  const result =
+    await telegram(
+      "sendMessage",
+      {
+
+        chat_id:
+          CHANNEL,
+
+        text:
+          buildCategoryMessage(
+            state.categories
+          ),
+
+        parse_mode:
+          "HTML",
+
+        link_preview_options:
+          {
+            is_disabled:
+              true
+          }
+
+      }
+    );
+
+
+  if (
+    !result ||
+    !result.message_id
+  ) {
+
+    throw new Error(
+      "Category message was not created."
+    );
+  }
+
+
+  state.categoryMessageId =
+    Number(
+      result.message_id
+    );
+
+
+  state.categoryMessagePinned =
+    false;
+
+
+  // ----------------------------------------------------------
+  // Pin only once
+  // ----------------------------------------------------------
+
+  try {
+
+    await telegram(
+      "pinChatMessage",
+      {
+
+        chat_id:
+          CHANNEL,
+
+        message_id:
+          Number(
+            result.message_id
+          ),
+
+        disable_notification:
+          true
+
+      }
+    );
+
+
+    state.categoryMessagePinned =
+      true;
+
+  } catch (error) {
+
+    console.error(
+      "Pin failed:",
+      error.message
+    );
+  }
+}
+
+
+// ============================================================
+// EDIT CATEGORY MESSAGE
+// ============================================================
+
+async function editCategoryMessage(
+  state
+) {
+
+  if (
+    !state.categoryMessageId
+  ) {
+
+    return false;
+  }
+
+
+  try {
+
+    await telegram(
+      "editMessageText",
+      {
+
+        chat_id:
+          CHANNEL,
+
+        message_id:
+          Number(
+            state.categoryMessageId
+          ),
+
+        text:
+          buildCategoryMessage(
+            state.categories
+          ),
+
+        parse_mode:
+          "HTML",
+
+        link_preview_options:
+          {
+            is_disabled:
+              true
+          }
+
+      }
+    );
+
+
+    return true;
+
+  } catch (error) {
+
+    const message =
+      String(
+        error.message || ""
+      ).toLowerCase();
+
+
+    if (
+      message.includes(
+        "message is not modified"
+      )
+    ) {
+
+      return true;
+    }
+
+
+    if (
+      message.includes(
+        "message to edit not found"
+      ) ||
+      message.includes(
+        "message can't be edited"
+      )
+    ) {
+
+      state.categoryMessageId =
+        null;
+
+      state.categoryMessagePinned =
+        false;
+
+      return false;
+    }
+
+
+    throw error;
+  }
+}
+
+
+// ============================================================
+// CATEGORY COUNTER
+// ============================================================
+
+function increaseCategory(
+  state,
+  tag
+) {
+
+  const raw =
+    String(
+      tag == null
+        ? ""
+        : tag
+    ).trim();
+
+
+  if (!raw) {
+    return;
+  }
+
+
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      state.categories,
+      raw
+    )
+  ) {
+
+    state.categories[raw] =
+      0;
+  }
+
+
+  state.categories[raw] =
+    (Number(
+      state.categories[raw]
+    ) || 0) + 1;
+}
+
+
+// ============================================================
+// LOCK
+// ============================================================
+
+async function acquireLock(env) {
+
+  const current =
+    await env.DB.get(
+      LOCK_KEY
+    );
+
+
+  if (current) {
+
+    const created =
+      Number(current);
+
+
+    if (
+      Number.isFinite(created)
+    ) {
+
+      const age =
+        Date.now() -
+        created;
+
+
+      if (
+        age >= 0 &&
+        age < 120000
+      ) {
+
+        return false;
+      }
+    }
+  }
+
+
+  await env.DB.put(
+    LOCK_KEY,
+    String(
+      Date.now()
+    ),
+    {
+      expirationTtl:
+        120
+    }
+  );
+
+
+  return true;
+}
+
+
+async function releaseLock(env) {
+
+  try {
+
+    await env.DB.delete(
+      LOCK_KEY
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Lock release failed:",
+      error.message
+    );
+  }
+}
+
+
+// ============================================================
+// MAIN PROCESS
+// ============================================================
+
+async function processNews(env) {
+
+  const locked =
+    await acquireLock(
+      env
+    );
+
+
+  if (!locked) {
+
+    return {
+
+      ok: false,
+
+      locked: true,
+
+      message:
+        "یک Sync دیگر در حال اجراست."
+
+    };
+  }
+
+
+  try {
+
+    // --------------------------------------------------------
+    // ONE STATE READ
+    // --------------------------------------------------------
+
+    const state =
+      await loadState(
+        env
+      );
+
+
+    // --------------------------------------------------------
+    // API
+    // --------------------------------------------------------
+
+    const allNews =
+      await fetchNews();
+
+
+    // --------------------------------------------------------
+    // ONLY TODAY UTC
+    // --------------------------------------------------------
+
+    const today =
+      todayUTC();
+
+
+    const sent =
+      new Set(
+        state.sentNewsIds.map(
+          function (id) {
+            return String(id);
+          }
+        )
+      );
+
+
+    const todayNews =
+      allNews
+        .filter(function (news) {
+
+          if (
+            !news ||
+            !news.id ||
+            !news.timestamp
+          ) {
+
+            return false;
+          }
+
+
+          return (
+            timestampDateUTC(
+              news.timestamp
+            ) === today
+          );
+
+        })
+        .sort(function (a, b) {
+
+          return (
+            Number(
+              a.timestamp || 0
+            ) -
+            Number(
+              b.timestamp || 0
+            )
+          );
+
+        });
+
+
+    // --------------------------------------------------------
+    // MAX 7 NEW NEWS
+    // --------------------------------------------------------
+
+    const pending =
+      todayNews
+        .filter(function (news) {
+
+          return !sent.has(
+            String(news.id)
+          );
+
+        })
+        .filter(function (news) {
+
+          return (
+            news.title_fa &&
+            String(
+              news.title_fa
+            ).trim()
+          );
+
+        })
+        .slice(
+          0,
+          MAX_NEWS_PER_RUN
+        );
+
+
+    let sentCount = 0;
+    let failedCount = 0;
+
+
+    // --------------------------------------------------------
+    // SEND
+    // --------------------------------------------------------
+
+    for (
+      let i = 0;
+      i < pending.length;
+      i++
+    ) {
+
+      const news =
+        pending[i];
+
+
+      const id =
+        String(
+          news.id
+        );
+
+
+      try {
+
+        await sendNews(
+          news
+        );
+
+
+        // Mark sent ONLY after successful Telegram send
+        sent.add(id);
+
+
+        increaseCategory(
+          state,
+          news.tag
+        );
+
+
+        sentCount++;
+
+
+        if (
+          i <
+          pending.length - 1
+        ) {
+
+          await sleep(
+            SEND_DELAY_MS
+          );
+        }
+
+      } catch (error) {
+
+        failedCount++;
+
+
+        console.error(
+          "News " +
+          id +
+          " failed:",
+          error.message
+        );
+      }
+    }
+
+
+    // --------------------------------------------------------
+    // Keep last 5000 IDs
+    // --------------------------------------------------------
+
+    state.sentNewsIds =
+      Array.from(
+        sent
+      ).slice(-5000);
+
+
+    // --------------------------------------------------------
+    // CATEGORY MESSAGE
+    // --------------------------------------------------------
+
+    if (
+      state.categoryMessageId
+    ) {
+
+      const edited =
+        await editCategoryMessage(
+          state
+        );
+
+
+      if (!edited) {
+
+        await createCategoryMessage(
+          env,
+          state
+        );
+      }
+
+    } else {
+
+      await createCategoryMessage(
+        env,
+        state
+      );
+    }
+
+
+    // --------------------------------------------------------
+    // Metadata
+    // --------------------------------------------------------
+
+    state.lastSync =
+      new Date()
+        .toISOString();
+
+
+    state.lastSyncResult = {
+
+      utcDate:
+        today,
+
+      totalApiNews:
+        allNews.length,
+
+      todayNews:
+        todayNews.length,
+
+      pending:
+        pending.length,
+
+      sent:
+        sentCount,
+
+      failed:
+        failedCount
+
+    };
+
+
+    // --------------------------------------------------------
+    // ONE MAIN KV WRITE
+    // --------------------------------------------------------
+
+    await saveState(
+      env,
+      state
+    );
+
+
+    return {
+
+      ok: true,
+
+      utcDate:
+        today,
+
+      totalApiNews:
+        allNews.length,
+
+      todayNews:
+        todayNews.length,
+
+      pending:
+        pending.length,
+
+      sent:
+        sentCount,
+
+      failed:
+        failedCount,
+
+      migrated:
+        state.migrated === true
+
+    };
+
+  } finally {
+
+    await releaseLock(
+      env
+    );
+  }
+}
+
+
+// ============================================================
+// AUTH
+// ============================================================
+
+function authorized(request) {
+
+  const url =
+    new URL(
+      request.url
+    );
+
+
+  return (
+    url.searchParams.get(
+      "password"
+    ) ===
+    ADMIN_PASSWORD
+  );
+}
+
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+
+async function dashboard(
+  env,
+  request
+) {
+
+  const state =
+    await loadState(
+      env
+    );
+
+
+  const popular =
+    Object.entries(
+      state.categories || {}
+    )
+    .map(function (entry) {
+
+      return {
+
+        name:
+          String(entry[0]),
+
+        count:
+          Number(entry[1]) || 0
+
+      };
+
+    })
+    .filter(function (item) {
+
+      return item.count >= 17;
+
+    })
+    .sort(function (a, b) {
+
+      return (
+        b.count -
+        a.count
+      );
+
+    });
+
+
+  let categoriesHTML;
+
+
+  if (
+    popular.length > 0
+  ) {
+
+    categoriesHTML =
+      popular
+        .map(function (item) {
+
+          return (
+            '<div style="' +
+            'display:flex;' +
+            'justify-content:space-between;' +
+            'padding:10px 0;' +
+            'border-bottom:1px solid #333;' +
+            '">' +
+
+            "<b>" +
+            escapeHTML(
+              makeHashtag(
+                item.name
+              )
+            ) +
+            "</b>" +
+
+            "<b>" +
+            toEnglishDigits(
+              item.count
+            ) +
+            "</b>" +
+
+            "</div>"
+          );
+
+        })
+        .join("");
+
+  } else {
+
+    categoriesHTML =
+      "<p>هنوز هشتگ پرکاربردی به ۱۷ نرسیده است.</p>";
+  }
+
+
+  const lastResult =
+    state.lastSyncResult || {};
+
+
+  return new Response(
+
+`
+<!doctype html>
+
+<html lang="fa" dir="rtl">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta
+name="viewport"
+content="width=device-width,initial-scale=1">
+
+<title>TitrXFA</title>
+
+<style>
+
+*{
+box-sizing:border-box;
+}
+
+body{
+margin:0;
+background:#0d1117;
+color:#fff;
+font-family:Tahoma,Arial,sans-serif;
+}
+
+.box{
+width:100%;
+max-width:720px;
+margin:auto;
+padding:14px;
+}
+
+.card{
+background:#161b22;
+border:1px solid #30363d;
+border-radius:16px;
+padding:18px;
+margin-bottom:14px;
+}
+
+h2,h3{
+margin-top:0;
+}
+
+.muted{
+color:#8b949e;
+}
+
+button{
+width:100%;
+padding:14px;
+border:0;
+border-radius:12px;
+background:#238636;
+color:white;
+font-weight:bold;
+font-size:16px;
+cursor:pointer;
+}
+
+button:disabled{
+opacity:.5;
+}
+
+.row{
+display:flex;
+justify-content:space-between;
+gap:10px;
+padding:10px 0;
+border-bottom:1px solid #30363d;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="box">
+
+<div class="card">
+
+<h2>📰 TitrXFA</h2>
+
+<div class="muted">
+پنل مدیریت ربات خبری
+</div>
+
+</div>
+
+
+<div class="card">
+
+<h3>
+📊 دسته‌بندی اخبار — هشتگ‌های پرکاربرد
+</h3>
+
+${categoriesHTML}
+
+</div>
+
+
+<div class="card">
+
+<div class="row">
+
+<span>اخبار ذخیره‌شده</span>
+
+<b>
+${toEnglishDigits(
+  state.sentNewsIds.length
+)}
+</b>
+
+</div>
+
+
+<div class="row">
+
+<span>پیام دسته‌بندی</span>
+
+<b>
+${
+  state.categoryMessageId ||
+  "-"
+}
+</b>
+
+</div>
+
+
+<div class="row">
+
+<span>مهاجرت KV</span>
+
+<b>
+${
+  state.migrated
+    ? "انجام شده"
+    : "خیر"
+}
+</b>
+
+</div>
+
+
+<div class="row">
+
+<span>آخرین Sync</span>
+
+<b>
+${
+  state.lastSync ||
+  "-"
+}
+</b>
+
+</div>
+
+
+<div class="row">
+
+<span>ارسال آخرین اجرا</span>
+
+<b>
+${toEnglishDigits(
+  lastResult.sent || 0
+)}
+</b>
+
+</div>
+
+</div>
+
+
+<div class="card">
+
+<button
+id="syncButton"
+onclick="runSync()">
+
+🔄 اجرای Sync
+
+</button>
+
+<p
+id="status"
+class="muted">
+
+آماده
+
+</p>
+
+</div>
+
+</div>
+
+
+<script>
+
+async function runSync(){
+
+const button =
+document.getElementById(
+"syncButton"
+);
+
+const status =
+document.getElementById(
+"status"
+);
+
+button.disabled = true;
+
+status.textContent =
+"⏳ در حال اجرای Sync...";
+
+const params =
+new URLSearchParams(
+window.location.search
+);
+
+const password =
+params.get("password") || "";
+
+try{
+
+const response =
+await fetch(
+"/api/sync?password=" +
+encodeURIComponent(password)
+);
+
+const data =
+await response.json();
+
+if(!data.ok){
+
+throw new Error(
+data.error ||
+"خطای نامشخص"
+);
+
+}
+
+status.textContent =
+"✅ " +
+data.sent +
+" خبر ارسال شد.";
+
+setTimeout(
+function(){
+location.reload();
+},
+1000
+);
+
+}catch(error){
+
+status.textContent =
+"❌ " +
+error.message;
+
+button.disabled = false;
+
+}
+
+}
+
+</script>
+
+</body>
+
+</html>
+`,
+
+    {
+      headers: {
+        "Content-Type":
+          "text/html;charset=UTF-8"
+      }
+    }
+  );
+}
+
+
+// ============================================================
+// WORKER
+// ============================================================
+
+export default {
+
+  async fetch(
+    request,
+    env,
+    ctx
+  ) {
+
+    const url =
+      new URL(
+        request.url
+      );
+
+
+    if (
+      url.pathname === "/"
+    ) {
+
+      if (
+        !authorized(request)
+      ) {
+
+        return new Response(
+          "Unauthorized",
+          {
+            status: 401
+          }
+        );
+      }
+
+
+      return dashboard(
+        env,
+        request
+      );
+    }
+
+
+    if (
+      url.pathname === "/api/sync"
+    ) {
+
+      if (
+        !authorized(request)
+      ) {
+
+        return new Response(
+
+          JSON.stringify({
+            ok: false,
+            error: "Unauthorized"
+          }),
+
+          {
+            status: 401,
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            }
+          }
+        );
+      }
+
+
+      try {
+
+        const result =
+          await processNews(
+            env
+          );
+
+
+        return new Response(
+
+          JSON.stringify(
+            result
+          ),
+
+          {
+            headers: {
+              "Content-Type":
+                "application/json"
+            }
+          }
+        );
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+
+        return new Response(
+
+          JSON.stringify({
+
+            ok: false,
+
+            error:
+              error.message
+
+          }),
+
+          {
+
+            status: 500,
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            }
+
+          }
+        );
+      }
+    }
+
+
+    if (
+      url.pathname === "/health"
+    ) {
+
+      return new Response(
+
+        JSON.stringify({
+
+          ok: true,
+
+          bot:
+            "TitrXFA",
+
+          channel:
+            CHANNEL,
+
+          utc:
+            new Date()
+              .toISOString()
+
+        }),
+
+        {
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          }
+
+        }
+      );
+    }
+
+
+    return new Response(
+      "TitrXFA Worker",
+      {
+        status: 404
+      }
+    );
+  },
+
+
+  // ==========================================================
+  // CRON
+  // ==========================================================
+
+  async scheduled(
+    event,
+    env,
+    ctx
+  ) {
+
+    ctx.waitUntil(
+      processNews(env)
+    );
+  }
+
+};
